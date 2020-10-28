@@ -252,6 +252,419 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/10/09/Kafka常用命令/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/10/09/Kafka常用命令/" itemprop="url">Kafka常用命令</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-09T17:28:44+08:00">
+                2018-10-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Kafka常用命令"><a href="#Kafka常用命令" class="headerlink" title="Kafka常用命令"></a>Kafka常用命令</h2><blockquote>
+<p>启动命令</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-server-start.sh  config/server.properties</span><br><span class="line"></span><br><span class="line">#后台启动</span><br><span class="line">bin/kafka-server-start.sh -daemon config/server.properties</span><br><span class="line">bin/kafka-server-start.sh config/server.properties 1&gt;/dev/null 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>创建topic</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 10 --topic testTopic</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>查看所有的topic</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --list --zookeeper 127.0.0.1:2181</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>查看topic的详细信息</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --zookeeper 127.0.0.1:2181 --describe --topic testTopic</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>为topic增加partition</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --zookeeper 127.0.0.1:2181 --alter --partitions 20 --topic testTopic</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>删除topic</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-topics.sh --delete --zookeeper 127.0.0.1:2181 --topic testTopic  #要配置允许删除topic，delete.topic.enable=true</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>kafka生产者客户端命令</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-console-producer.sh --broker-list localhost:9092 --topic testTopic</span><br><span class="line">bin/kafka-console-producer.sh --broker-list localhost:9092 --topic testTopic --producer.config config/producer.properties</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>kafka消费者客户端命令</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-console-consumer.sh --zookeeper localhost:2181 --from-beginning --topic testTopic</span><br><span class="line">bin/kafka-console-consumer.sh --zookeeper localhost:2181 --from-beginning --topic testTopic --consumer.config config/consumer.properties</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>新消费者列表查询（支持0.9版本+）</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --new-consumer --bootstrap-server localhost:9092 --list</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>显示某个消费组的消费详情（支持0.9版本+）</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-consumer-groups.sh --new-consumer --bootstrap-server localhost:9092 --describe --group testGroup001</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/10/09/Kafka-Stream-TimestampExtractor/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/10/09/Kafka-Stream-TimestampExtractor/" itemprop="url">Kafka Stream TimestampExtractor</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-09T16:42:26+08:00">
+                2018-10-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>线上的KafkaStream程序出现了下面的异常，”has invalid (negative) timestamp.”：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread &quot;ad-effect-application-001-bf034f5b-9012-4e5e-aab3-128774768e74-StreamThread-2&quot; org.apache.kafka.streams.errors.StreamsException: Input record ConsumerRecord(topic = dmpRawLog7, partition = 5, offset = 375653352, CreateTime = -1, serialized key size = -1, serialized value size = 980, headers = RecordHeaders(headers = [], isReadOnly = false), key = null, value = &#123;&quot;data&quot;:&quot;&#123;\&quot;type\&quot;:\&quot;getad\&quot;,\&quot;sid\&quot;:\&quot;e52db2495177bd3c\&quot;,\&quot;time\&quot;:1538208879,\&quot;zone\&quot;:&#123;\&quot;id\&quot;:\&quot;1xsgiwb0jqfh\&quot;,\&quot;resourceid\&quot;:\&quot;\&quot;,\&quot;agentid\&quot;:\&quot;1xsgh2et8jk7\&quot;,\&quot;businessid\&quot;:\&quot;sndo_sndo\&quot;&#125;,\&quot;user\&quot;:&#123;\&quot;id\&quot;:\&quot;5d4073746afabbf9a11a27fbf9fe33eb\&quot;,\&quot;clkip\&quot;:\&quot;\&quot;,\&quot;clkuseragent\&quot;:\&quot;\&quot;,\&quot;clkvalid\&quot;:0&#125;,\&quot;scenario\&quot;:&#123;\&quot;page\&quot;:\&quot;http://sp360.9idudu.com/sdk/defaultr/app/share/share.html?appId=9214af24213ab9212c5235fafe82c4d4\&quot;,\&quot;referrer\&quot;:\&quot;http://sp360.9idudu.com/sdk/defaultr/app/share/share.html?appId=9214af24213ab9212c5235fafe82c4d4\\u0026appSecret=a943ff9a630c3c01c3e92444f354f860\\u0026messageId=cmsqukngt1irs\\u0026messageType=NEWS\\u0026parentId=af274d7b4026bcff1c04131321eaf7ec\&quot;&#125;,\&quot;device\&quot;:&#123;\&quot;ip\&quot;:\&quot;171.220.55.140\&quot;,\&quot;agent\&quot;:\&quot;Mozilla/5.0 (Linux; Android 7.1.2; KINGSUN-F16 Build/N2G47H; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/52.0.2743.100 Mobile Safari/537.36 Imei/434766830973068DCBEA8AFB32463F5F\&quot;,\&quot;screen\&quot;:\&quot;\&quot;&#125;,\&quot;fill\&quot;:1,\&quot;appid\&quot;:\&quot;\&quot;&#125;&quot;&#125;) has invalid (negative) timestamp. Possibly because a pre-0.10 producer client was used to write this record to Kafka without embedding a timestamp, or because the input topic was created before upgrading the Kafka cluster to 0.10+. Use a different TimestampExtractor to process this data.</span><br><span class="line">        at org.apache.kafka.streams.processor.FailOnInvalidTimestamp.onInvalidTimestamp(FailOnInvalidTimestamp.java:63)</span><br><span class="line">        at org.apache.kafka.streams.processor.ExtractRecordMetadataTimestamp.extract(ExtractRecordMetadataTimestamp.java:61)</span><br><span class="line">        at org.apache.kafka.streams.processor.FailOnInvalidTimestamp.extract(FailOnInvalidTimestamp.java:46)</span><br><span class="line">        at org.apache.kafka.streams.processor.internals.RecordQueue.addRawRecords(RecordQueue.java:85)</span><br><span class="line">        at org.apache.kafka.streams.processor.internals.PartitionGroup.addRawRecords(PartitionGroup.java:117)</span><br><span class="line">        at org.apache.kafka.streams.processor.internals.StreamTask.addRecords(StreamTask.java:493)</span><br><span class="line">        at org.apache.kafka.streams.processor.internals.StreamThread.addRecordsToTasks(StreamThread.java:628)</span><br><span class="line">        at org.apache.kafka.streams.processor.internals.StreamThread.runOnce(StreamThread.java:512)</span><br><span class="line">        at org.apache.kafka.streams.processor.internals.StreamThread.runLoop(StreamThread.java:482)</span><br><span class="line">        at org.apache.kafka.streams.processor.internals.StreamThread.run(StreamThread.java:459)</span><br></pre></td></tr></table></figure>
+<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><p>查阅资料发现是时间戳导致的，kafka中我存的是一个Json字符串，里面包含timestamp字段，出问题的数据是因为没有timestamp字段，所以自己实现TimestampExtractor。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">import org.apache.kafka.clients.consumer.ConsumerRecord;</span><br><span class="line">import org.apache.kafka.streams.processor.TimestampExtractor;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> * Created by hadoop on 2018/9/30.</span><br><span class="line"> */</span><br><span class="line">public class CurrentTimestampExtractor implements TimestampExtractor &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public long extract(ConsumerRecord&lt;Object, Object&gt; record, long previousTimestamp) &#123;</span><br><span class="line">        long timestamp = record.timestamp();</span><br><span class="line">        if (timestamp &lt; 0) &#123;</span><br><span class="line">            return System.currentTimeMillis();</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            return timestamp;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Kafka Stream 配置自定义的TimestampExtractor：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kafkaStreamConf.put(StreamsConfig.DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG, CurrentTimestampExtractor.class.getName());</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/10/09/Kafka-Stream-WordCount/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/10/09/Kafka-Stream-WordCount/" itemprop="url">Kafka Stream WordCount</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-09T16:31:35+08:00">
+                2018-10-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Kafka-Stream-示例"><a href="#Kafka-Stream-示例" class="headerlink" title="Kafka Stream 示例"></a>Kafka Stream 示例</h2><blockquote>
+<p>Maven依赖</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">	&lt;groupId&gt;org.apache.kafka&lt;/groupId&gt;</span><br><span class="line">	&lt;artifactId&gt;kafka-streams&lt;/artifactId&gt;</span><br><span class="line">	&lt;version&gt;0.11.0.2&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>WordCount Demo</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">public class WordCountApplication &#123;</span><br><span class="line"> </span><br><span class="line">    public static void main(final String[] args) throws Exception &#123;</span><br><span class="line">        Properties props = new Properties();</span><br><span class="line">        props.put(StreamsConfig.APPLICATION_ID_CONFIG, &quot;wordcount-application&quot;);</span><br><span class="line">        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, &quot;kafka-broker1:9092&quot;);</span><br><span class="line">        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());</span><br><span class="line">        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());</span><br><span class="line"> </span><br><span class="line">        StreamsBuilder builder = new StreamsBuilder();</span><br><span class="line">        KStream&lt;String, String&gt; textLines = builder.stream(&quot;TextLinesTopic&quot;);</span><br><span class="line">        KTable&lt;String, Long&gt; wordCounts = textLines</span><br><span class="line">            .flatMapValues(textLine -&gt; Arrays.asList(textLine.toLowerCase().split(&quot;\\W+&quot;)))</span><br><span class="line">            .groupBy((key, word) -&gt; word)</span><br><span class="line">            .count(Materialized.&lt;String, Long, KeyValueStore&lt;Bytes, byte[]&gt;&gt;as(&quot;counts-store&quot;));</span><br><span class="line">        wordCounts.toStream().to(&quot;WordsWithCountsTopic&quot;, Produced.with(Serdes.String(), Serdes.Long()));</span><br><span class="line"> </span><br><span class="line">        KafkaStreams streams = new KafkaStreams(builder.build(), props);</span><br><span class="line">        streams.start();</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>KafkaStream 一些配置说明</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Properties props = new Properties();</span><br><span class="line">props.put(StreamsConfig.APPLICATION_ID_CONFIG, &quot;wordcount-application&quot;);	//KafkaStream Application Id</span><br><span class="line">props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, &quot;kafka-broker1:9092&quot;);	//kafka bootstrap servers</span><br><span class="line">props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());	//key Serde</span><br><span class="line">props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());	//value Serde</span><br><span class="line"></span><br><span class="line">props.put(StreamsConfig.consumerPrefix(ConsumerConfig.MAX_POLL_RECORDS_CONFIG), 1000);	//一次poll操作获取的最大记录数</span><br><span class="line"></span><br><span class="line">props.put(StreamsConfig.consumerPrefix(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG), &quot;latest&quot;);	//如果是新的group latest 表示从当前最新开始消费，默认是earliest</span><br><span class="line"></span><br><span class="line">props.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, 10);		//stream操作的线程数</span><br><span class="line"></span><br><span class="line">props.put(StreamsConfig.consumerPrefix(ConsumerConfig.EXCLUDE_INTERNAL_TOPICS_CONFIG), false);		//是否排除内部的topics，比如记录offset的topic：__consumer_offsets</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/10/09/《Flume系列文章》-六、自定义Flume插件/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1306,294 +1719,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/09/10/《Flume系列文章》-二、Flume源码分析之Flume-Node/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/10/《Flume系列文章》-二、Flume源码分析之Flume-Node/" itemprop="url">《Flume系列文章》 二、Flume源码分析之Flume Node</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-10T14:12:30+08:00">
-                2018-09-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Flume-Node源码分析"><a href="#Flume-Node源码分析" class="headerlink" title="Flume Node源码分析"></a>Flume Node源码分析</h2><p>类Application.java(org.apache.flume.node.Application)为Flume Node的主入口，从这个开始进行代码分析。本分分析的代码在Flume源码包中flume-ng-node、flume-ng-core两个模块中。</p>
-<h2 id="读取配置文件"><a href="#读取配置文件" class="headerlink" title="读取配置文件"></a>读取配置文件</h2><p>配置文件的读取是通过调用AbstractConfigurationProvider类的getConfiguration()方法。AbstractConfigurationProvider的子类通过实现getFlumeConfiguration()方法可以从不同的地方获取配置，参数”z”/“zkConnString”是来指定zookeeper地址。没有配置zookeeper地址的话就直接读取”f”/“conf-file”指定的配置文件。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">public MaterializedConfiguration getConfiguration() &#123;</span><br><span class="line">  MaterializedConfiguration conf = new SimpleMaterializedConfiguration();</span><br><span class="line">  //子类通过实现getFlumeConfiguration方法，从不同的地方获取配置数据（zookeeper、memory、file等）</span><br><span class="line">  FlumeConfiguration fconfig = getFlumeConfiguration();</span><br><span class="line">  AgentConfiguration agentConf = fconfig.getConfigurationFor(getAgentName());</span><br><span class="line">  if (agentConf != null) &#123;</span><br><span class="line">    Map&lt;String, ChannelComponent&gt; channelComponentMap = Maps.newHashMap();</span><br><span class="line">    Map&lt;String, SourceRunner&gt; sourceRunnerMap = Maps.newHashMap();</span><br><span class="line">    Map&lt;String, SinkRunner&gt; sinkRunnerMap = Maps.newHashMap();</span><br><span class="line">    try &#123;</span><br><span class="line">      loadChannels(agentConf, channelComponentMap);   //加载chanels配置</span><br><span class="line">      loadSources(agentConf, channelComponentMap, sourceRunnerMap);   //加载sources配置</span><br><span class="line">      loadSinks(agentConf, channelComponentMap, sinkRunnerMap);   //加载sinks配置</span><br><span class="line">      Set&lt;String&gt; channelNames = new HashSet&lt;String&gt;(channelComponentMap.keySet());</span><br><span class="line">      for (String channelName : channelNames) &#123;</span><br><span class="line">        ChannelComponent channelComponent = channelComponentMap.get(channelName);</span><br><span class="line">        if (channelComponent.components.isEmpty()) &#123;</span><br><span class="line">          LOGGER.warn(String.format(&quot;Channel %s has no components connected&quot; +</span><br><span class="line">              &quot; and has been removed.&quot;, channelName));</span><br><span class="line">          channelComponentMap.remove(channelName);</span><br><span class="line">          Map&lt;String, Channel&gt; nameChannelMap =</span><br><span class="line">              channelCache.get(channelComponent.channel.getClass());</span><br><span class="line">          if (nameChannelMap != null) &#123;</span><br><span class="line">            nameChannelMap.remove(channelName);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">          LOGGER.info(String.format(&quot;Channel %s connected to %s&quot;,</span><br><span class="line">              channelName, channelComponent.components.toString()));</span><br><span class="line">          conf.addChannel(channelName, channelComponent.channel);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      for (Map.Entry&lt;String, SourceRunner&gt; entry : sourceRunnerMap.entrySet()) &#123;</span><br><span class="line">        conf.addSourceRunner(entry.getKey(), entry.getValue());</span><br><span class="line">      &#125;</span><br><span class="line">      for (Map.Entry&lt;String, SinkRunner&gt; entry : sinkRunnerMap.entrySet()) &#123;</span><br><span class="line">        conf.addSinkRunner(entry.getKey(), entry.getValue());</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; catch (InstantiationException ex) &#123;</span><br><span class="line">      LOGGER.error(&quot;Failed to instantiate component&quot;, ex);</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">      channelComponentMap.clear();</span><br><span class="line">      sourceRunnerMap.clear();</span><br><span class="line">      sinkRunnerMap.clear();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; else &#123;</span><br><span class="line">    LOGGER.warn(&quot;No configuration found for this host:&#123;&#125;&quot;, getAgentName());</span><br><span class="line">  &#125;</span><br><span class="line">  return conf;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>启动是有个参数”no-reload-conf”，是指定是否需要在修改配置文件后，重启Flume Node。对于文件方式的配置方式，指定需要在修改配置文件后重启Flume，就是启动了一个监控文件的线程，执行了如下操作，对配置文件的修改时间进行监控。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">public class FileWatcherRunnable implements Runnable &#123;</span><br><span class="line"></span><br><span class="line">  private final File file;</span><br><span class="line">  private final CounterGroup counterGroup;</span><br><span class="line"></span><br><span class="line">  private long lastChange;</span><br><span class="line"></span><br><span class="line">  public FileWatcherRunnable(File file, CounterGroup counterGroup) &#123;</span><br><span class="line">    super();</span><br><span class="line">    this.file = file;</span><br><span class="line">    this.counterGroup = counterGroup;</span><br><span class="line">    this.lastChange = 0L;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public void run() &#123;</span><br><span class="line">    LOGGER.debug(&quot;Checking file:&#123;&#125; for changes&quot;, file);</span><br><span class="line"></span><br><span class="line">    counterGroup.incrementAndGet(&quot;file.checks&quot;);</span><br><span class="line"></span><br><span class="line">    long lastModified = file.lastModified();</span><br><span class="line"></span><br><span class="line">    if (lastModified &gt; lastChange) &#123;</span><br><span class="line">      LOGGER.info(&quot;Reloading configuration file:&#123;&#125;&quot;, file);</span><br><span class="line"></span><br><span class="line">      counterGroup.incrementAndGet(&quot;file.loads&quot;);</span><br><span class="line"></span><br><span class="line">      lastChange = lastModified;</span><br><span class="line"></span><br><span class="line">      try &#123;</span><br><span class="line">        eventBus.post(getConfiguration());</span><br><span class="line">      &#125; catch (Exception e) &#123;</span><br><span class="line">        LOGGER.error(&quot;Failed to load configuration data. Exception follows.&quot;,</span><br><span class="line">            e);</span><br><span class="line">      &#125; catch (NoClassDefFoundError e) &#123;</span><br><span class="line">        LOGGER.error(&quot;Failed to start agent because dependencies were not &quot; +</span><br><span class="line">            &quot;found in classpath. Error follows.&quot;, e);</span><br><span class="line">      &#125; catch (Throwable t) &#123;</span><br><span class="line">        // caught because the caller does not handle or log Throwables</span><br><span class="line">        LOGGER.error(&quot;Unhandled error&quot;, t);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h2 id="启动组件"><a href="#启动组件" class="headerlink" title="启动组件"></a>启动组件</h2><p>加载配置后，会调用start()或者startAllComponents()方法启动所有的组件。在这两个方法中可以看到，组件是通过调用LifecycleSupervisor对象的supervise()方法进行启动的。在supervise()方法中，是执行了MonitorRunnable对象，代码如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br></pre></td><td class="code"><pre><span class="line">public static class MonitorRunnable implements Runnable &#123;</span><br><span class="line"></span><br><span class="line">  public ScheduledExecutorService monitorService;</span><br><span class="line">  public LifecycleAware lifecycleAware;   //Flume组件（SourceRunner、Channel、SinkRunner）</span><br><span class="line">  public Supervisoree supervisoree;       //管理组件状态，status属性记录组件的状态，policy属性是指定组件的运行方式（总是重启和只执行一次）</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public void run() &#123;</span><br><span class="line">    logger.debug(&quot;checking process:&#123;&#125; supervisoree:&#123;&#125;&quot;, lifecycleAware,</span><br><span class="line">        supervisoree);</span><br><span class="line"></span><br><span class="line">    long now = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">    try &#123;</span><br><span class="line">      if (supervisoree.status.firstSeen == null) &#123;</span><br><span class="line">        logger.debug(&quot;first time seeing &#123;&#125;&quot;, lifecycleAware);</span><br><span class="line"></span><br><span class="line">        supervisoree.status.firstSeen = now;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      supervisoree.status.lastSeen = now;</span><br><span class="line">      synchronized (lifecycleAware) &#123;</span><br><span class="line">        if (supervisoree.status.discard) &#123;</span><br><span class="line">          // Unsupervise has already been called on this.</span><br><span class="line">          logger.info(&quot;Component has already been stopped &#123;&#125;&quot;, lifecycleAware);</span><br><span class="line">          return;</span><br><span class="line">        &#125; else if (supervisoree.status.error) &#123;</span><br><span class="line">          logger.info(&quot;Component &#123;&#125; is in error state, and Flume will not&quot;</span><br><span class="line">              + &quot;attempt to change its state&quot;, lifecycleAware);</span><br><span class="line">          return;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        supervisoree.status.lastSeenState = lifecycleAware.getLifecycleState();</span><br><span class="line"></span><br><span class="line">        if (!lifecycleAware.getLifecycleState().equals(</span><br><span class="line">            supervisoree.status.desiredState)) &#123;</span><br><span class="line"></span><br><span class="line">          logger.debug(&quot;Want to transition &#123;&#125; from &#123;&#125; to &#123;&#125; (failures:&#123;&#125;)&quot;,</span><br><span class="line">              new Object[] &#123; lifecycleAware, supervisoree.status.lastSeenState,</span><br><span class="line">                  supervisoree.status.desiredState,</span><br><span class="line">                  supervisoree.status.failures &#125;);</span><br><span class="line"></span><br><span class="line">          switch (supervisoree.status.desiredState) &#123;</span><br><span class="line">            case START:</span><br><span class="line">              try &#123;</span><br><span class="line">                lifecycleAware.start();</span><br><span class="line">              &#125; catch (Throwable e) &#123;</span><br><span class="line">                logger.error(&quot;Unable to start &quot; + lifecycleAware</span><br><span class="line">                    + &quot; - Exception follows.&quot;, e);</span><br><span class="line">                if (e instanceof Error) &#123;</span><br><span class="line">                  // This component can never recover, shut it down.</span><br><span class="line">                  supervisoree.status.desiredState = LifecycleState.STOP;</span><br><span class="line">                  try &#123;</span><br><span class="line">                    lifecycleAware.stop();</span><br><span class="line">                    logger.warn(&quot;Component &#123;&#125; stopped, since it could not be&quot;</span><br><span class="line">                        + &quot;successfully started due to missing dependencies&quot;,</span><br><span class="line">                        lifecycleAware);</span><br><span class="line">                  &#125; catch (Throwable e1) &#123;</span><br><span class="line">                    logger.error(&quot;Unsuccessful attempt to &quot;</span><br><span class="line">                        + &quot;shutdown component: &#123;&#125; due to missing dependencies.&quot;</span><br><span class="line">                        + &quot; Please shutdown the agent&quot;</span><br><span class="line">                        + &quot;or disable this component, or the agent will be&quot;</span><br><span class="line">                        + &quot;in an undefined state.&quot;, e1);</span><br><span class="line">                    supervisoree.status.error = true;</span><br><span class="line">                    if (e1 instanceof Error) &#123;</span><br><span class="line">                      throw (Error) e1;</span><br><span class="line">                    &#125;</span><br><span class="line">                    // Set the state to stop, so that the conf poller can</span><br><span class="line">                    // proceed.</span><br><span class="line">                  &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                supervisoree.status.failures++;</span><br><span class="line">              &#125;</span><br><span class="line">              break;</span><br><span class="line">            case STOP:</span><br><span class="line">              try &#123;</span><br><span class="line">                lifecycleAware.stop();</span><br><span class="line">              &#125; catch (Throwable e) &#123;</span><br><span class="line">                logger.error(&quot;Unable to stop &quot; + lifecycleAware</span><br><span class="line">                    + &quot; - Exception follows.&quot;, e);</span><br><span class="line">                if (e instanceof Error) &#123;</span><br><span class="line">                  throw (Error) e;</span><br><span class="line">                &#125;</span><br><span class="line">                supervisoree.status.failures++;</span><br><span class="line">              &#125;</span><br><span class="line">              break;</span><br><span class="line">            default:</span><br><span class="line">              logger.warn(&quot;I refuse to acknowledge &#123;&#125; as a desired state&quot;,</span><br><span class="line">                  supervisoree.status.desiredState);</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">          if (!supervisoree.policy.isValid(lifecycleAware, supervisoree.status)) &#123;</span><br><span class="line">            logger.error(</span><br><span class="line">                &quot;Policy &#123;&#125; of &#123;&#125; has been violated - supervisor should exit!&quot;,</span><br><span class="line">                supervisoree.policy, lifecycleAware);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; catch (Throwable t) &#123;</span><br><span class="line">      logger.error(&quot;Unexpected error&quot;, t);</span><br><span class="line">    &#125;</span><br><span class="line">    logger.debug(&quot;Status check complete&quot;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/09/10/《Flume系列文章》-一、Flume的使用/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/10/《Flume系列文章》-一、Flume的使用/" itemprop="url">《Flume系列文章》 一、Flume的使用</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-10T10:22:02+08:00">
-                2018-09-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="官方文档"><a href="#官方文档" class="headerlink" title="官方文档"></a>官方文档</h2><p>官网地址：<a href="http://flume.apache.org" target="_blank" rel="noopener">http://flume.apache.org</a><br>文档地址：<a href="http://flume.apache.org/FlumeUserGuide.html" target="_blank" rel="noopener">http://flume.apache.org/FlumeUserGuide.html</a><br>下载地址：<a href="http://flume.apache.org/download.html" target="_blank" rel="noopener">http://flume.apache.org/download.html</a></p>
-<h2 id="Flume结构"><a href="#Flume结构" class="headerlink" title="Flume结构"></a>Flume结构</h2><img src="/2018/09/10/《Flume系列文章》-一、Flume的使用/Architecture.png" title="[Flume结构图]">
-<blockquote>
-<p>Events</p>
-</blockquote>
-<p>Event是Flume中数据流动的单元。</p>
-<blockquote>
-<p>Agent</p>
-</blockquote>
-<p>完整Flume实例，是一个独立的JVM程序。</p>
-<blockquote>
-<p>Source</p>
-</blockquote>
-<p>Source是从外部系统摄入数据，生成Events到Channel中。</p>
-<blockquote>
-<p>Channel</p>
-</blockquote>
-<p>Channel是一个数据通道，在Source和Channel之间，起到一个缓冲数据的作用。</p>
-<blockquote>
-<p>Sink</p>
-</blockquote>
-<p>Sink是从Channel中取出Events，并将数据落入到外部系统中。</p>
-<h2 id="Flume使用"><a href="#Flume使用" class="headerlink" title="Flume使用"></a>Flume使用</h2><blockquote>
-<p>下载</p>
-</blockquote>
-<p>下载Flume的包并解压，我使用的是1.8.0的版本（apache-flume-1.8.0-bin.tar.gz）。</p>
-<blockquote>
-<p>JAVA_HOME和JAVA_OPTS配置</p>
-</blockquote>
-<p>conf/flume-env.sh.template是Flume运行环境的配置模板，可以复制一份flume-env.sh文件，配置JAVA_HOME和JAVA_OPTS。</p>
-<blockquote>
-<p>Flume Agent配置</p>
-</blockquote>
-<p>conf/flume-conf.properties.template是Flume Agent配置模板。<br>接下来我需要配置一个Http Source、一个Memory Channel和一个Kafka Sink，来实现Http接口上报日志数据落入到Kafka消息队列中。</p>
-<p>定义Agent：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">agent.sources = httpSrc</span><br><span class="line">agent.channels = memoryChannel</span><br><span class="line">agent.sinks = kafkaSink</span><br></pre></td></tr></table></figure></p>
-<p>配置Source<br>参考：<a href="http://flume.apache.org/FlumeUserGuide.html#http-source" target="_blank" rel="noopener">http://flume.apache.org/FlumeUserGuide.html#http-source</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">agent.sources.httpSrc.type = http</span><br><span class="line">agent.sources.httpSrc.port = 5140</span><br><span class="line">agent.sources.httpSrc.handler = org.apache.flume.source.http.JSONHandler</span><br><span class="line">agent.sources.httpSrc.channels = memoryChannel</span><br></pre></td></tr></table></figure></p>
-<p>配置Channel<br>参考：<a href="http://flume.apache.org/FlumeUserGuide.html#memory-channel" target="_blank" rel="noopener">http://flume.apache.org/FlumeUserGuide.html#memory-channel</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">agent.channels.memoryChannel.type = memory</span><br><span class="line">agent.channels.memoryChannel.capacity = 10	# Channel中存储的最大Event数</span><br><span class="line">agent.channels.memoryChannel.transactionCapacity = 8	# Channel每个事务从Source获取Events最大数或Channel每个事务提供给Sink的Events最大数。</span><br></pre></td></tr></table></figure></p>
-<p>配置Sink<br>参考：<a href="http://flume.apache.org/FlumeUserGuide.html#kafka-sink" target="_blank" rel="noopener">http://flume.apache.org/FlumeUserGuide.html#kafka-sink</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">agent.sinks.kafkaSink.type = org.apache.flume.sink.kafka.KafkaSink</span><br><span class="line">agent.sinks.kafkaSink.kafka.topic = wz_test</span><br><span class="line">agent.sinks.kafkaSink.kafka.bootstrap.servers = 192.168.1.180:9092</span><br><span class="line">agent.sinks.kafkaSink.kafka.flumeBatchSize = 10</span><br><span class="line">agent.sinks.kafkaSink.kafka.producer.acks = 1</span><br><span class="line">agent.sinks.kafkaSink.kafka.producer.linger.ms = 1</span><br><span class="line">agent.sinks.kafkaSink.kafka.producer.compression.type = gzip</span><br><span class="line">agent.sinks.kafkaSink.channel = memoryChannel</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>启动Agent</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">bin/flume-ng agent \</span><br><span class="line">    -n agent \		#agent名称</span><br><span class="line">    -c ./conf \		#配置文件目录</span><br><span class="line">    -f ./conf/flume-conf.properties  \	#agent配置文件</span><br><span class="line">    -Dflume.monitoring.type=http -Dflume.monitoring.port=34545	#监控</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1639,7 +1769,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">29</span>
+                  <span class="site-state-item-count">32</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1652,7 +1782,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-count">18</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

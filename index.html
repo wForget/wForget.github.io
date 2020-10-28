@@ -252,6 +252,375 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/10/28/Spark-写-Parquet-数据丢失问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/10/28/Spark-写-Parquet-数据丢失问题/" itemprop="url">Spark 写 Parquet 数据丢失问题</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-10-28T11:10:41+08:00">
+                2020-10-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>数据同步任务是为了做跨集群的 Hive 数据同步，通过  Spark 读取源集群 Hive 数据源，再写入目标集群 Table Location 的 HDFS 路径。</p>
+<p>用户批量执行 Spark 同步任务时（写同一个表的不同分区，大多是为了补历史数据的任务），部分分区数据丢失。</p>
+<h2 id="问题定位"><a href="#问题定位" class="headerlink" title="问题定位"></a>问题定位</h2><p>通过 Spark sql 对比，源集群和目标集群的数据，发现部分分区确实存在数据丢失。<br>查询目标集群丢失数据分区的 HDFS 目录，发现确实缺少部分 parquet 文件（parquet 文件缺少部分序列）。<br>查看  NameNode 日志，发现 Parquet 文件是先写到  \${TableLocation}/_temporary 目录中，在 rename 到目标目录。<br>继续在 NameNode 日志中查找丢失目录的 temp 文件，发现只有 Create 操作，没有 Delete 操作，不过发现了多个客户端在写同一个  _temporary 目录，并有删除操作。</p>
+<h2 id="临时路径如何确定"><a href="#临时路径如何确定" class="headerlink" title="临时路径如何确定"></a>临时路径如何确定</h2><p>Spark 写文件的入口类为：org.apache.spark.sql.execution.datasources.FileFormatWriter</p>
+<p>org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter 类是用来定义 MapReduce 任务 Job 的输出，包括 Job Task 输出路径的初始化、清理等工作。其中定义了temp 目录为 ${RealOutput}/_temporary 。</p>
+<p>Spark 任务为 FileOutputCommitter 做了一层代理 org.apache.spark.internal.io.FileCommitProtocol，部分场景使用到了 stagingDir 作为 output 路径。</p>
+<p>org.apache.spark.internal.io.HadoopMapReduceCommitProtocol#newTaskTempFile，当 dynamicPartitionOverwrite 为 true 时，临时路径在 spark stagingDir 中则每个任务不会重复。</p>
+<p><img src="1.png" alt="HadoopMapReduceCommitProtocol.newTaskTempFile"></p>
+<h2 id="Spark-通过-Hive-写入是如何保证的"><a href="#Spark-通过-Hive-写入是如何保证的" class="headerlink" title="Spark 通过 Hive 写入是如何保证的"></a>Spark 通过 Hive 写入是如何保证的</h2><p>Spark 中保存 Hive 表数据，实际上写入的路径改成了 hive staging 的路径，具体代码：org.apache.spark.sql.hive.execution.SaveAsHiveFile#getExternalTmpPath 中，然后进行 load partition。这个相当于直接将写入的 basePath 路径改变了，所以不会存在冲突。</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>方法一（没有采用）： 将 saveMode 设置为 Overwrite，partitionOverwriteMode 设置为 dynamic，这样写入的temp 目录就在 stagingDir 中，不过 overwrite 模式写入会先清空目标分区，所以没有采用。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">resultDF.write.partitionBy(partitionColumn: _*)</span><br><span class="line">  .mode(&quot;overwrite&quot;)</span><br><span class="line">  .option(&quot;partitionOverwriteMode&quot;, &quot;dynamic&quot;)</span><br><span class="line">  .parquet(hdfsTablePath)</span><br></pre></td></tr></table></figure>
+<p>方法二：定义 Temp 目录为 ${TableLocation}/${JobId}，确保写入路径不重复，在将 Temp 目录 merge 到 target 路径中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">resultDF.write.partitionBy(partitionColumn: _*).mode(writeMode)</span><br><span class="line">   .parquet(tempDir)</span><br><span class="line">// merge temp dir to table path</span><br><span class="line">// merge 方法参考 org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter#mergePaths</span><br><span class="line">mergePaths(tempDir, hdfsTablePath)</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/09/30/《SQL解析》-一、解析器简介/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/09/30/《SQL解析》-一、解析器简介/" itemprop="url">《SQL解析》 一、解析器简介</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-09-30T09:54:55+08:00">
+                2020-09-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/09/18/SQL解析系列/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/09/18/SQL解析系列/" itemprop="url">SQL解析系列</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-09-18T19:02:49+08:00">
+                2020-09-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="SQL解析"><a href="#SQL解析" class="headerlink" title="SQL解析"></a>SQL解析</h2><h3 id="编译器简介"><a href="#编译器简介" class="headerlink" title="编译器简介"></a>编译器简介</h3><h3 id="Antlr4、JavaCC-–-Parser"><a href="#Antlr4、JavaCC-–-Parser" class="headerlink" title="Antlr4、JavaCC – Parser"></a>Antlr4、JavaCC – Parser</h3><h3 id="Apache-Calcite、Spark-Catalyst-–-（Parser-amp-Optimizer）"><a href="#Apache-Calcite、Spark-Catalyst-–-（Parser-amp-Optimizer）" class="headerlink" title="Apache Calcite、Spark Catalyst  – （Parser&amp;Optimizer）"></a>Apache Calcite、Spark Catalyst  – （Parser&amp;Optimizer）</h3><h3 id="HIVE-SQL、Spark-SQL-执行过程"><a href="#HIVE-SQL、Spark-SQL-执行过程" class="headerlink" title="HIVE SQL、Spark SQL 执行过程"></a>HIVE SQL、Spark SQL 执行过程</h3>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/09/17/Spark-HiveMetastoreCatalog-Infer-Schema/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1309,465 +1678,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/11/Nginx打印RequestBody/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/11/Nginx打印RequestBody/" itemprop="url">Nginx打印RequestBody</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-04-11T15:48:39+08:00">
-                2019-04-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Nginx打印RequestBody"><a href="#Nginx打印RequestBody" class="headerlink" title="Nginx打印RequestBody"></a>Nginx打印RequestBody</h2><h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>新的日志收集构架中直接去掉 SpringBoot 服务，而是通过 Nginx 作为服务器，收集日志，打印成日志文件，通过 Flume 消费到 Kafka 中。由于日志收集的请求都是 Post JSON 的格式，所以需要在 Nginx 中获取 Post 的 Body。</p>
-<h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><p>在配置 log_format 后，发现无法打印 $request_body<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">log_format user_log_format escape=json &apos;&#123;&quot;time&quot;: &quot;$msec&quot;, &quot;ip&quot;: &quot;$remote_addr&quot;, &quot;ua&quot;: &quot;$http_user_agent&quot;, &quot;data&quot;: &quot;$request_body&quot;&#125;&apos;;</span><br></pre></td></tr></table></figure></p>
-<p>查看官方文档，有如下注释。意思是说 $request_body 需要在带有 proxy_pass, fastcgi_pass, uwsgi_pass, scgi_pass 这些指令的 location 中，当 request_body 被读到内存缓冲区中使用。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">The variable’s value is made available in locations processed by the proxy_pass, fastcgi_pass, uwsgi_pass, and scgi_pass directives when the request body was read to a memory buffer.</span><br></pre></td></tr></table></figure></p>
-<h3 id="Nginx-安装"><a href="#Nginx-安装" class="headerlink" title="Nginx 安装"></a>Nginx 安装</h3><p>由于在解决问题的时候需要使用到 ngx_lua 模块，所以我是直接安装的 OpenResty。<br>官网：<a href="http://openresty.org/cn/" target="_blank" rel="noopener">http://openresty.org/cn/</a><br>安装文档：<a href="http://openresty.org/cn/installation.html" target="_blank" rel="noopener">http://openresty.org/cn/installation.html</a></p>
-<h3 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h3><blockquote>
-<p>在使用 （proxy_pass, fastcgi_pass, uwsgi_pass, scgi_pass） 指令的 location 中打印日志。</p>
-</blockquote>
-<blockquote>
-<p>使用 HTTP Echo Module (OpenResty 中已经包括了这个模块)。</p>
-</blockquote>
-<p>HTTP Echo Module 参考文档：<a href="https://www.nginx.com/resources/wiki/modules/echo/" target="_blank" rel="noopener">https://www.nginx.com/resources/wiki/modules/echo/</a></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">worker_processes  1;</span><br><span class="line">error_log logs/error.log;</span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections 1024;</span><br><span class="line">&#125;</span><br><span class="line">http &#123;</span><br><span class="line">    include       /usr/local/openresty/nginx/conf/mime.types;</span><br><span class="line">    default_type  application/octet-stream;</span><br><span class="line"></span><br><span class="line">    # 日志文件格式  access.log  nginx默认的日志文件</span><br><span class="line">    log_format  main  &apos;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &apos;</span><br><span class="line">                      &apos;$status $body_bytes_sent $host &quot;$http_referer&quot; &apos;</span><br><span class="line">                      &apos;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&apos;;</span><br><span class="line">    # 日志文件格式 user_defined.log  数据会写到这个文件中</span><br><span class="line">    log_format user_log_format escape=json &apos;&#123;&quot;time&quot;: &quot;$msec&quot;, &quot;ip&quot;: &quot;$remote_addr&quot;, &quot;ua&quot;: &quot;$http_user_agent&quot;, &quot;data&quot;: &quot;$request_body&quot;&#125;&apos;;</span><br><span class="line"></span><br><span class="line">    server &#123;</span><br><span class="line">        listen 8080;</span><br><span class="line">        set $p_body &quot;&quot;;</span><br><span class="line">        location / &#123;</span><br><span class="line">            access_log /data/nginx/logs/user_defined.log user_log_format;</span><br><span class="line">            echo_read_request_body;</span><br><span class="line">            echo &apos;&apos;;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>使用 ngx_lua 模块</p>
-</blockquote>
-<p>Lua 参考文档：<a href="https://www.nginx.com/resources/wiki/modules/lua/" target="_blank" rel="noopener">https://www.nginx.com/resources/wiki/modules/lua/</a></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">worker_processes  1;</span><br><span class="line">error_log logs/error.log;</span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections 1024;</span><br><span class="line">&#125;</span><br><span class="line">http &#123;</span><br><span class="line">    include       /usr/local/openresty/nginx/conf/mime.types;</span><br><span class="line">    default_type  application/octet-stream;</span><br><span class="line"></span><br><span class="line">    # 日志文件格式  access.log  nginx默认的日志文件</span><br><span class="line">    log_format  main  &apos;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &apos;</span><br><span class="line">                      &apos;$status $body_bytes_sent $host &quot;$http_referer&quot; &apos;</span><br><span class="line">                      &apos;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&apos;;</span><br><span class="line">    # 日志文件格式 user_defined.log  数据会写到这个文件中</span><br><span class="line">    log_format user_log_format escape=json &apos;&#123;&quot;time&quot;: &quot;$msec&quot;, &quot;ip&quot;: &quot;$remote_addr&quot;, &quot;ua&quot;: &quot;$http_user_agent&quot;, &quot;data&quot;: &quot;$request_body&quot;&#125;&apos;;</span><br><span class="line"></span><br><span class="line">    server &#123;</span><br><span class="line">        listen 8080;</span><br><span class="line">        set $p_body &quot;&quot;;</span><br><span class="line">        location / &#123;</span><br><span class="line">            lua_need_request_body on;                                                                                            </span><br><span class="line">            content_by_lua &apos;local s = ngx.req.get_body_data()&apos;;</span><br><span class="line">            </span><br><span class="line">            access_log /data/nginx/logs/user_defined.log user_log_format;</span><br><span class="line">            # echo &apos;&apos;;	# 注意这个不能使用 echo 命令和 return 命令</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>还可以通过自定义的变量存放 request_body，然后再 log_format 中使用自定义变量打印。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">worker_processes  1;</span><br><span class="line">error_log logs/error.log;</span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections 1024;</span><br><span class="line">&#125;</span><br><span class="line">http &#123;</span><br><span class="line">    include       /usr/local/openresty/nginx/conf/mime.types;</span><br><span class="line">    default_type  application/octet-stream;</span><br><span class="line"></span><br><span class="line">    # 日志文件格式  access.log  nginx默认的日志文件</span><br><span class="line">    log_format  main  &apos;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &apos;</span><br><span class="line">                      &apos;$status $body_bytes_sent $host &quot;$http_referer&quot; &apos;</span><br><span class="line">                      &apos;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&apos;;</span><br><span class="line">    # 日志文件格式 user_defined.log  数据会写到这个文件中</span><br><span class="line">    log_format user_log_format escape=json &apos;&#123;&quot;time&quot;: &quot;$msec&quot;, &quot;ip&quot;: &quot;$remote_addr&quot;, &quot;ua&quot;: &quot;$http_user_agent&quot;, &quot;data&quot;: &quot;$p_body&quot;&#125;&apos;;</span><br><span class="line"></span><br><span class="line">    server &#123;</span><br><span class="line">        listen 8080;</span><br><span class="line">        set $p_body &quot;&quot;;</span><br><span class="line">        location / &#123;</span><br><span class="line">            lua_need_request_body on;</span><br><span class="line">            content_by_lua &apos;</span><br><span class="line">                local p_body = ngx.req.get_body_data() or &quot;&quot;</span><br><span class="line">                ngx.var.p_body = p_body</span><br><span class="line">            &apos;;</span><br><span class="line">			access_log /data/nginx/logs/user_defined.log user_log_format;</span><br><span class="line">            # echo &apos;&apos;;	# 注意这个不能使用 echo 命令和 return 命令</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/28/Redis-分布式锁/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/28/Redis-分布式锁/" itemprop="url">Redis 分布式锁</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-03-28T11:11:09+08:00">
-                2019-03-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Redis-分布式锁"><a href="#Redis-分布式锁" class="headerlink" title="Redis 分布式锁"></a>Redis 分布式锁</h2><p>分布式锁就是在分布式环境下获取锁，实现进程以独占资源的方式访问共享资源。</p>
-<h3 id="Redis-分布式锁的特性"><a href="#Redis-分布式锁的特性" class="headerlink" title="Redis 分布式锁的特性"></a>Redis 分布式锁的特性</h3><ul>
-<li>独享。同一时刻，只能有一个客户端获取到锁。</li>
-<li>无死锁。即使持有锁的客户端奔溃或网络断开，锁仍然可以被获取。</li>
-<li>容错。只要大部分Redis节点都活着，客户端就可以获取和释放锁。</li>
-</ul>
-<h3 id="单-Redis-实例实现分布式锁实现"><a href="#单-Redis-实例实现分布式锁实现" class="headerlink" title="单 Redis 实例实现分布式锁实现"></a>单 Redis 实例实现分布式锁实现</h3><blockquote>
-<p>SET 命令</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SET key value [EX seconds] [PX milliseconds] [NX|XX]</span><br><span class="line"># EX seconds – 设置键key的过期时间，单位时秒</span><br><span class="line"># PX milliseconds – 设置键key的过期时间，单位时毫秒</span><br><span class="line"># NX – 只有键key不存在的时候才会设置key的值</span><br><span class="line"># XX – 只有键key存在的时候才会设置key的值</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>获取锁</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 获取 分布式锁</span><br><span class="line"> * @param lockName  锁的 key</span><br><span class="line"> * @return 成功时返回一个随机生成的id，为了正确的释放锁，失败时返回 null</span><br><span class="line"> */</span><br><span class="line">public static String getLock(String lockName) &#123;</span><br><span class="line">	String result = null;</span><br><span class="line">	try (Jedis jedis = getJedis()) &#123;</span><br><span class="line">		String randomId = UUID.randomUUID().toString();</span><br><span class="line">		// EX seconds – 设置键key的过期时间，单位时秒。PX milliseconds – 设置键key的过期时间，单位时毫秒。NX – 只有键key不存在的时候才会设置key的值。XX – 只有键key存在的时候才会设置key的值</span><br><span class="line">		String status =  jedis.set(lockName, randomId, &quot;nx&quot;, &quot;px&quot;, 10000);    // 10s 过期时间</span><br><span class="line">		if (&quot;OK&quot;.equals(status)) &#123;</span><br><span class="line">			result = randomId;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; catch (Exception e) &#123;</span><br><span class="line">		String msg = ExceptionUtil.stackTraceMsg(e);</span><br><span class="line">		logger.error(msg);</span><br><span class="line">	&#125;</span><br><span class="line">	return result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>释放锁</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 释放锁</span><br><span class="line"> * @param lockName 锁的名称</span><br><span class="line"> * @param randomId 获取锁时返回的的id</span><br><span class="line"> * @return</span><br><span class="line"> */</span><br><span class="line">public static boolean releaseLock(String lockName, String randomId) &#123;</span><br><span class="line">    boolean result = false;</span><br><span class="line">    // Lua 脚本</span><br><span class="line">    String script = &quot;if redis.call(\&quot;get\&quot;,KEYS[1]) == ARGV[1] then\n&quot; +</span><br><span class="line">                    &quot;    return redis.call(\&quot;del\&quot;,KEYS[1])\n&quot; +</span><br><span class="line">                    &quot;else\n&quot; +</span><br><span class="line">                    &quot;    return 0\n&quot; +</span><br><span class="line">                    &quot;end&quot;;</span><br><span class="line">    try (Jedis jedis = getJedis()) &#123;</span><br><span class="line">        Long status = (Long) jedis.eval(script, Collections.singletonList(lockName), Collections.singletonList(randomId));</span><br><span class="line">        if (status.longValue() == 1L) &#123;</span><br><span class="line">            result = true;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; catch (Exception e) &#123;</span><br><span class="line">        String msg = ExceptionUtil.stackTraceMsg(e);</span><br><span class="line">        logger.error(msg);</span><br><span class="line">    &#125;</span><br><span class="line">    return result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>单 Redis 实例实现分布式锁存在的问题</p>
-</blockquote>
-<p>在单 Redis 实例的分布式锁实现中存在的最严重的问题就是单节点失败的问题，不能保证 Redis 永远不会挂掉。<br>在主从结构的 Redis 集群中，这种构架也是有问题的，不能实现资源的独享，因为 Redis 的主从同步通常是异步的：</p>
-<ol>
-<li>客户端 A 从 Master 获取到锁</li>
-<li>在 Master 同步到 Slave 之前，Master 节点挂掉了</li>
-<li>Slave 节点成为了 Master 节点</li>
-<li>客户端B取得了同一个资源被客户端A已经获取到的另外一个锁。安全失效！</li>
-</ol>
-<p>Redis 宕机毕竟是小概率实现，所以在可以忽略宕机的事件时，这个构架还是很实用的。</p>
-<h3 id="Redlock"><a href="#Redlock" class="headerlink" title="Redlock"></a>Redlock</h3><p>Redlock 是 Antirez 提出的，使用多个完全独立的 Redis 实例，来实现分布式锁的算法。</p>
-<p>参考：<a href="https://redis.io/topics/distlock#the-redlock-algorithm" target="_blank" rel="noopener">The Redlock algorithm</a><br>参考：<a href="https://my.oschina.net/yanpenglei/blog/2874699" target="_blank" rel="noopener">Redis集群下的RedLock算法(真分布式锁) 实践</a></p>
-<h3 id="Redisson-分布式锁"><a href="#Redisson-分布式锁" class="headerlink" title="Redisson 分布式锁"></a>Redisson 分布式锁</h3><p>参考：<a href="https://github.com/redisson/redisson/wiki/8.-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E5%92%8C%E5%90%8C%E6%AD%A5%E5%99%A8" target="_blank" rel="noopener">分布式锁和同步器</a></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/22/《Phoenix使用总结》-三、二级索引/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/22/《Phoenix使用总结》-三、二级索引/" itemprop="url">《Phoenix使用总结》 三、二级索引</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-22T17:51:40+08:00">
-                2019-02-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="二级索引"><a href="#二级索引" class="headerlink" title="二级索引"></a>二级索引</h2><h3 id="HBase-二级索引方案"><a href="#HBase-二级索引方案" class="headerlink" title="HBase 二级索引方案"></a>HBase 二级索引方案</h3><p>HBase 中的行是以 RowKey 的字典序排序存储。所以对于 HBase 的快速查询主要有两种场景，一种是根据 RowKey 快速查询单行数据，另一种是基于 RowKey 的前缀查询。由于 HBase 只有 RowKey 的一级索引，根据其他的字段进行查询效率是很低的，实际业务场景中可能需要引入二级索引。</p>
-<p>我所了解的 HBase 二级索引的解决思路有如下几种：</p>
-<ul>
-<li>官方的解决方案是使用 Coprocessor(类似触发器)，自定义写入逻辑，当有数据写入时同时写入一份索引表。</li>
-<li>可以使用其他的工具在外部构建和维护索引关系，索引字段和 RowKey 的对应关系，比如使用 Elasticsearch、MongoDB 等。</li>
-<li>使用 Phoenix 构建二级索引。</li>
-</ul>
-<p>Coprocessor 的方案由于运行都交给了 Regionserver，侵入性比较强，会对 Regionserver 的性能造成影响。第一版的时候我使用了 MongoDB 维护了索引关系，后期数据量达到 20 亿，对 MongoDB 所在的服务器造成了很大的压力，所以后期决定使用基于 HBase 的 Phoenix 构建二级索引。</p>
-<h3 id="Phoenix-二级索引"><a href="#Phoenix-二级索引" class="headerlink" title="Phoenix 二级索引"></a>Phoenix 二级索引</h3><p>官方文档：<a href="http://phoenix.apache.org/secondary_indexing.html" target="_blank" rel="noopener">http://phoenix.apache.org/secondary_indexing.html</a></p>
-<h4 id="索引特性"><a href="#索引特性" class="headerlink" title="索引特性"></a>索引特性</h4><blockquote>
-<p>Covered Indexes(覆盖索引) </p>
-</blockquote>
-<p>覆盖索引指的是把查询相关的字段都指定在索引中，这样查询就只需要在索引表中查询就行。建立索引的语句如下，把查询的字段（where条件字段）放在 ON 语句中，把其他需要查询出来的字段（其他 select 字段）放在 INCLUDE 中。</p>
-<p>Phoenix 的索引其实就是维护一张 HBase 表（本地索引与原始数据同一张表），把索引的字段作为 RowKey，把 INCLUDE 的字段放在 COLUMN 中。所以索引的顺序也注意，需要把条件中一定有的字段放在前面，可能有的字段放在后面。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX my_index ON my_table (v1,v2) INCLUDE(v3);</span><br><span class="line">SELECT v1, v2, v3 FROM my_table WHERE v1=&apos;&apos; AND v2=&apos;&apos;;	// where 条件中 v1、v2 字段放在 ON 语句中，其他查询字段 v3 放在 INCLUDE 语句中</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>Functional Indexes(函数索引)</p>
-</blockquote>
-<p>索引的字段不局限与列，支持任意的表达式来创建索引。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX UPPER_NAME_IDX ON EMP (UPPER(FIRST_NAME||&apos; &apos;||LAST_NAME));</span><br><span class="line">SELECT EMP_ID FROM EMP WHERE UPPER(FIRST_NAME||&apos; &apos;||LAST_NAME)=&apos;JOHN DOE&apos;;	// 使用函数索引，生成大写的 FIRST_NAME + LAST_NAME 的索引</span><br></pre></td></tr></table></figure>
-<h4 id="构建索引"><a href="#构建索引" class="headerlink" title="构建索引"></a>构建索引</h4><p>Phoenix 支持两种类型的索引机制，Global Indexes(全局索引) 和 Local Indexes(本地索引)，不同的索引机制适用于不同的业务场景，默认是构建全局索引。全局索引是维护了一张新的索引表，本地索引的索引数据存在了原始数据表中(4.8.0之后)。</p>
-<blockquote>
-<p>Global Indexes(全局索引)</p>
-</blockquote>
-<p>Global Indexes(全局索引) 适用于大量读取操作的场景。所有数据的更新和写操作都需要更新相关的索引表，所以开销主要发生在写入阶段，查询是直接查询索引表，所以查询开销较小。由于只会查询索引表，所以在建立索引时需要合理设计 INCLUDE 字段，把需要查询的字段都放进去。</p>
-<blockquote>
-<p>Local Indexes(本地索引)</p>
-</blockquote>
-<p>Local Indexes(本地索引) 适用于大量写入操作的场景。本地索引的索引数据放在了数据表中(从4.8.0开始，我们将所有本地索引数据存储在同一数据表中的单独阴影列族中)，索引数据和原始数据是在同一台机器上面，所以没有额外的网络开销。本地索引可以使用在没有全面覆盖 INCLUDE 的场景。</p>
-<h4 id="索引实例"><a href="#索引实例" class="headerlink" title="索引实例"></a>索引实例</h4><blockquote>
-<p>异步创建索引</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 先创建异步索引</span><br><span class="line">CREATE INDEX async_index ON my_schema.my_table (v) ASYNC</span><br><span class="line"></span><br><span class="line"># 再通过 MapReduce 任务异步构建索引，output-path 是一个hdfs路径（存放 MapReduce 任务执行的临时文件）</span><br><span class="line">$&#123;HBASE_HOME&#125;/bin/hbase org.apache.phoenix.mapreduce.index.IndexTool</span><br><span class="line">  --schema my_schema --data-table my_table --index-table async_index</span><br><span class="line">  --output-path ASYNC_IDX_HFILES</span><br><span class="line"></span><br><span class="line"># 实例</span><br><span class="line">CREATE LOCAL INDEX match_index_new_qm ON PUBG.MATCH_INDEX_NEW(lowerNickName, type, mode, queueSize, startedAt DESC) INCLUDE (matchId, totalRank) ASYNC</span><br><span class="line"># 构建时发现无法找到 org.apache.phoenix.mapreduce.index.IndexTool 类，索引把 jar 加到 HBASE_CLASSPATH 中</span><br><span class="line">export HBASE_CLASSPATH=/opt/cloudera/parcels/APACHE_PHOENIX/lib/phoenix/phoenix-4.14.0-cdh5.13.2-client.jar</span><br><span class="line">hbase org.apache.phoenix.mapreduce.index.IndexTool --schema PUBG --data-table MATCH_INDEX_NEW --index-table match_index_new_qm --output-path /user/hadoop/wangzhen</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>创建索引</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX my_index ON my_table (v1) INCLUDE (v2);</span><br><span class="line"></span><br><span class="line">CREATE INDEX my_index ON my_table (v2 DESC, v1) INCLUDE (v3)</span><br><span class="line">    SALT_BUCKETS=10, DATA_BLOCK_ENCODING=&apos;NONE&apos;;</span><br></pre></td></tr></table></figure>
-<p>与CREATE TABLE语句一样，CREATE INDEX语句可以传递属性以应用于基础HBase表，包括对其进行加盐的能力，如果主表被加盐，则索引将以相同的方式自动为全局索引加盐。使用本地索引时，不允许指定SALT_BUCKETS。</p>
-<blockquote>
-<p>创建本地索引</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CREATE LOCAL INDEX my_index ON my_table (v1)</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>查询时指定索引</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT /*+ INDEX(my_table my_index) */ v2 FROM my_table WHERE v1 = &apos;foo&apos;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1813,7 +1728,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">29</span>
+                  <span class="site-state-item-count">32</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1826,7 +1741,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-count">18</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
