@@ -331,6 +331,7 @@
 <p>Spark 任务为 FileOutputCommitter 做了一层代理 org.apache.spark.internal.io.FileCommitProtocol，部分场景使用到了 stagingDir 作为 output 路径。</p>
 <p>org.apache.spark.internal.io.HadoopMapReduceCommitProtocol#newTaskTempFile，当 dynamicPartitionOverwrite 为 true 时，临时路径在 spark stagingDir 中则每个任务不会重复。</p>
 <p><img src="1.png" alt="HadoopMapReduceCommitProtocol.newTaskTempFile"></p>
+<img class="1.png">
 <h2 id="Spark-通过-Hive-写入是如何保证的"><a href="#Spark-通过-Hive-写入是如何保证的" class="headerlink" title="Spark 通过 Hive 写入是如何保证的"></a>Spark 通过 Hive 写入是如何保证的</h2><p>Spark 中保存 Hive 表数据，实际上写入的路径改成了 hive staging 的路径，具体代码：org.apache.spark.sql.hive.execution.SaveAsHiveFile#getExternalTmpPath 中，然后进行 load partition。这个相当于直接将写入的 basePath 路径改变了，所以不会存在冲突。</p>
 <h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><p>方法一（没有采用）： 将 saveMode 设置为 Overwrite，partitionOverwriteMode 设置为 dynamic，这样写入的temp 目录就在 stagingDir 中，不过 overwrite 模式写入会先清空目标分区，所以没有采用。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">resultDF.write.partitionBy(partitionColumn: _*)</span><br><span class="line">  .mode(&quot;overwrite&quot;)</span><br><span class="line">  .option(&quot;partitionOverwriteMode&quot;, &quot;dynamic&quot;)</span><br><span class="line">  .parquet(hdfsTablePath)</span><br></pre></td></tr></table></figure>
