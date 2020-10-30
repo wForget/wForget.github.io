@@ -252,6 +252,135 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/10/30/Linkis-权限系统对接/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/10/30/Linkis-权限系统对接/" itemprop="url">Linkis 权限系统对接</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-10-30T13:39:30+08:00">
+                2020-10-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Linkis-权限控制"><a href="#Linkis-权限控制" class="headerlink" title="Linkis 权限控制"></a>Linkis 权限控制</h2><p>目前 Linkis 的库表权限控制主要是依赖于 Hive 的权限控制。</p>
+<p>下面分享一下 Linkis 接入第三方权限系统，进行库表权限的控制。主要做了三个模块的接入：Metadata 模块、Hive 引擎、Spark 引擎。</p>
+<p>以下代码大多为伪代码，需要根据实际情况进行完善，AuthClient 为权限系统的客户端，主要与权限系统交互，获取和校验用户的库表权限。</p>
+<h3 id="MetaData-模块对接"><a href="#MetaData-模块对接" class="headerlink" title="MetaData 模块对接"></a>MetaData 模块对接</h3><p>前端页面上数据开发面板中，展示的数据库和表是通过调用 linkis-metadata 模块进行获取的，当前的实现是直接查询 Hive 权限相关的表进行获取。</p>
+<p>这里需要修改 com.webank.wedatasphere.linkis.metadata.service.impl.DataSourceServiceImpl 类，接入权限系统，根据用户获取有权限的库表。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">AuthClient authClient = AuthClient.getInstance();</span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> JsonNode <span class="title">getDbs</span><span class="params">(String userName)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    List&lt;String&gt; dbs = authClient.getDbsByUser(userName);</span><br><span class="line">    ArrayNode dbsNode = jsonMapper.createArrayNode();</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">return</span> dbsNode;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> JsonNode <span class="title">getDbsWithTables</span><span class="params">(String userName)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    ArrayNode dbNodes = jsonMapper.createArrayNode();</span><br><span class="line">    List&lt;String&gt; dbs = authClient.getDbsByUser(userName);</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">return</span> dbNodes;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> JsonNode <span class="title">queryTables</span><span class="params">(String database, String userName)</span> </span>&#123;</span><br><span class="line">    List&lt;Map&lt;String, Object&gt;&gt; listTables = Lists.newArrayList();</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    List&lt;String&gt; authTables = authClient.getTablesByUser(database, userName);</span><br><span class="line"></span><br><span class="line">    ArrayNode tables = jsonMapper.createArrayNode();</span><br><span class="line">    <span class="keyword">for</span> (Map&lt;String, Object&gt; table : listTables) &#123;</span><br><span class="line">        String talbeName = (String) table.get(<span class="string">"NAME"</span>);</span><br><span class="line">        <span class="keyword">if</span> (!authTables.contains(talbeName)) &#123;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> tables;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Hive-引擎对接"><a href="#Hive-引擎对接" class="headerlink" title="Hive 引擎对接"></a>Hive 引擎对接</h3><p>Hive 引擎是通过 Hive Driver 进行任务的执行，那么可以通过实现 PreExecute 接口，配置到 hive.exec.pre.hooks 中，完成权限的校验，校验不通过时抛出异常进行拦截。</p>
+<p>AuthHiveHook 为 PreExecute 的实现，具体实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AuthHiveHook</span> <span class="keyword">extends</span> <span class="title">PreExecute</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  def user: String = DWCArgumentsParser.getDWCOptionMap(<span class="string">"user"</span>)</span><br><span class="line">  val authClient: AuthClient =  AuthClient.getInstance()</span><br><span class="line"></span><br><span class="line">  <span class="function">override def <span class="title">run</span><span class="params">(sess: SessionState, inputs: util.Set[ReadEntity], outputs: util.Set[WriteEntity], ugi: UserGroupInformation)</span>: Unit </span>= &#123;</span><br><span class="line">    inputs.foreach(input =&gt; &#123;</span><br><span class="line">      val database = input.getTable.getDbName</span><br><span class="line">      val table = input.getTable.getTableName</span><br><span class="line">      <span class="keyword">if</span> (!authClient.checkReadTable(user, database, table)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> AuthorizationException(<span class="string">"Authorization failed, user:"</span> + user + <span class="string">" database:"</span> + database + <span class="string">" table:"</span> + table)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">    outputs.foreach(output =&gt; &#123;</span><br><span class="line">      val database = output.getTable.getDbName</span><br><span class="line">      val table = output.getTable.getTableName</span><br><span class="line">      <span class="keyword">if</span> (!authClient.checkWriteTable(user, database, table)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> AuthorizationException(<span class="string">"Authorization failed, user:"</span> + user + <span class="string">" database:"</span> + database + <span class="string">" table:"</span> + table)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Spark-引擎对接"><a href="#Spark-引擎对接" class="headerlink" title="Spark 引擎对接"></a>Spark 引擎对接</h3><p>Spark 引擎的库表权限控制参考了 <a href="https://github.com/yaooqinn/spark-authorizer.git" target="_blank" rel="noopener">spark-authorizer</a> 的实现，通过实现 OptimizerRule，对 LogicalPlan 解析输入输出表，再进行权限校验和控制。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/10/28/Spark-写-Parquet-数据丢失问题/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1497,187 +1626,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/12/Nginx配置指南/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/12/Nginx配置指南/" itemprop="url">Nginx配置指南</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-04-12T10:21:39+08:00">
-                2019-04-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Nginx配置指南"><a href="#Nginx配置指南" class="headerlink" title="Nginx配置指南"></a>Nginx配置指南</h2><h3 id="nginx-conf-文件结构"><a href="#nginx-conf-文件结构" class="headerlink" title="nginx.conf 文件结构"></a>nginx.conf 文件结构</h3><p>参考：<a href="https://www.cnblogs.com/knowledgesea/p/5175711.html" target="_blank" rel="noopener">Nginx配置详解</a></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">...              #全局块</span><br><span class="line"></span><br><span class="line">events &#123;         #events块</span><br><span class="line">   ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http      #http块</span><br><span class="line">&#123;</span><br><span class="line">    ...   #http全局块</span><br><span class="line">    server        #server块</span><br><span class="line">    &#123; </span><br><span class="line">        ...       #server全局块</span><br><span class="line">        location [PATTERN]   #location块</span><br><span class="line">        &#123;</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">        location [PATTERN] </span><br><span class="line">        &#123;</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    server</span><br><span class="line">    &#123;</span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...     #http全局块</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<ol>
-<li>全局块：配置影响nginx全局的指令。一般有运行nginx服务器的用户组，nginx进程pid存放路径，日志存放路径，配置文件引入，允许生成worker process数等。</li>
-<li>events块：配置影响nginx服务器或与用户的网络连接。有每个进程的最大连接数，选取哪种事件驱动模型处理连接请求，是否允许同时接受多个网路连接，开启多个网络连接序列化等。</li>
-<li>http块：可以嵌套多个server，配置代理，缓存，日志定义等绝大多数功能和第三方模块的配置。如文件引入，mime-type定义，日志自定义，是否使用sendfile传输文件，连接超时时间，单连接请求数等。</li>
-<li>server块：配置虚拟主机的相关参数，一个http中可以有多个server。</li>
-<li>location块：配置请求的路由，以及各种页面的处理情况。</li>
-</ol>
-<h3 id="配置详解"><a href="#配置详解" class="headerlink" title="配置详解"></a>配置详解</h3><blockquote>
-<p>全局块</p>
-</blockquote>
-<table>
-<thead>
-<tr>
-<th>指令</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>user</td>
-<td>配置 worker 进程的用户和组</td>
-</tr>
-<tr>
-<td>worker_processes</td>
-<td>指定 worker 进程启动数量，用于处理客户端的所有连接。设置该值为 CPU 的核数。(max_clients = worker_processes * worker_connections)</td>
-</tr>
-<tr>
-<td>error_log</td>
-<td>指定日志文件，如果在其他区段中没有设置其他的 error_log ，那么这个日志文件将会记录所有的错误。该指令的第二个参数指定了被记录错误的级别(debug 、info 、notice 、warn 、error 、crit 、alert 、emerg )。注意 debug 级别的错误只有在编译时配置了 –with-debug 选项才可以使用。</td>
-</tr>
-<tr>
-<td>pid</td>
-<td>设置记录主进程 ID 的文件</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p>events块</p>
-</blockquote>
-<table>
-<thead>
-<tr>
-<th>指令</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>use</td>
-<td>选择事件模型，默认 Nginx 会自动使用最适合的事件模型。对于Linux操作系统来说，可供选择的事件驱动模型有poll、select、epoll三种。epoll 是性能最高的一种。</td>
-</tr>
-<tr>
-<td>worker_connections</td>
-<td>定义每个worker进程可以同时处理的最大连接数</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p>http块</p>
-</blockquote>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1728,7 +1676,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">32</span>
+                  <span class="site-state-item-count">33</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1741,7 +1689,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-count">19</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

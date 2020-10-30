@@ -252,6 +252,187 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/12/Nginx配置指南/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/04/12/Nginx配置指南/" itemprop="url">Nginx配置指南</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-04-12T10:21:39+08:00">
+                2019-04-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Nginx配置指南"><a href="#Nginx配置指南" class="headerlink" title="Nginx配置指南"></a>Nginx配置指南</h2><h3 id="nginx-conf-文件结构"><a href="#nginx-conf-文件结构" class="headerlink" title="nginx.conf 文件结构"></a>nginx.conf 文件结构</h3><p>参考：<a href="https://www.cnblogs.com/knowledgesea/p/5175711.html" target="_blank" rel="noopener">Nginx配置详解</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">...              #全局块</span><br><span class="line"></span><br><span class="line">events &#123;         #events块</span><br><span class="line">   ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http      #http块</span><br><span class="line">&#123;</span><br><span class="line">    ...   #http全局块</span><br><span class="line">    server        #server块</span><br><span class="line">    &#123; </span><br><span class="line">        ...       #server全局块</span><br><span class="line">        location [PATTERN]   #location块</span><br><span class="line">        &#123;</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">        location [PATTERN] </span><br><span class="line">        &#123;</span><br><span class="line">            ...</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    server</span><br><span class="line">    &#123;</span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...     #http全局块</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>全局块：配置影响nginx全局的指令。一般有运行nginx服务器的用户组，nginx进程pid存放路径，日志存放路径，配置文件引入，允许生成worker process数等。</li>
+<li>events块：配置影响nginx服务器或与用户的网络连接。有每个进程的最大连接数，选取哪种事件驱动模型处理连接请求，是否允许同时接受多个网路连接，开启多个网络连接序列化等。</li>
+<li>http块：可以嵌套多个server，配置代理，缓存，日志定义等绝大多数功能和第三方模块的配置。如文件引入，mime-type定义，日志自定义，是否使用sendfile传输文件，连接超时时间，单连接请求数等。</li>
+<li>server块：配置虚拟主机的相关参数，一个http中可以有多个server。</li>
+<li>location块：配置请求的路由，以及各种页面的处理情况。</li>
+</ol>
+<h3 id="配置详解"><a href="#配置详解" class="headerlink" title="配置详解"></a>配置详解</h3><blockquote>
+<p>全局块</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>指令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>user</td>
+<td>配置 worker 进程的用户和组</td>
+</tr>
+<tr>
+<td>worker_processes</td>
+<td>指定 worker 进程启动数量，用于处理客户端的所有连接。设置该值为 CPU 的核数。(max_clients = worker_processes * worker_connections)</td>
+</tr>
+<tr>
+<td>error_log</td>
+<td>指定日志文件，如果在其他区段中没有设置其他的 error_log ，那么这个日志文件将会记录所有的错误。该指令的第二个参数指定了被记录错误的级别(debug 、info 、notice 、warn 、error 、crit 、alert 、emerg )。注意 debug 级别的错误只有在编译时配置了 –with-debug 选项才可以使用。</td>
+</tr>
+<tr>
+<td>pid</td>
+<td>设置记录主进程 ID 的文件</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>events块</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>指令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>use</td>
+<td>选择事件模型，默认 Nginx 会自动使用最适合的事件模型。对于Linux操作系统来说，可供选择的事件驱动模型有poll、select、epoll三种。epoll 是性能最高的一种。</td>
+</tr>
+<tr>
+<td>worker_connections</td>
+<td>定义每个worker进程可以同时处理的最大连接数</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>http块</p>
+</blockquote>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/11/Nginx打印RequestBody/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1561,175 +1742,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/10/12/Tomcat配置APR运行模式/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/10/12/Tomcat配置APR运行模式/" itemprop="url">Tomcat配置APR运行模式</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-12T11:19:57+08:00">
-                2018-10-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Tomcat三种运行模式"><a href="#Tomcat三种运行模式" class="headerlink" title="Tomcat三种运行模式"></a>Tomcat三种运行模式</h2><blockquote>
-<p>BIO(blocking I/O)</p>
-</blockquote>
-<p>阻塞式I/O操作，表示Tomcat使用的是传统的Java I/O操作(即java.io包及其子包)，对于每一个请求都要创建一个线程来进行处理，所以开销较大不适合处理高并发的场景。</p>
-<blockquote>
-<p>NIO(New IO)</p>
-</blockquote>
-<p>基于java中非阻塞IO操作的API实现(即java.nio包及其子包)，比传统的i/o处理方式有更高的并发运行性能。</p>
-<blockquote>
-<p>APR(Apache Portable Runtime/Apache可移植运行库)</p>
-</blockquote>
-<p>Apache Portable Runtime是Apache HTTP服务器的支持库。可以简单地理解为，Tomcat将以JNI的形式调用Apache HTTP服务器的核心动态链接库来处理文件读取或网络传输操作，从而大大地提高Tomcat对静态文件的处理性能。 Tomcat apr也是在Tomcat上运行高并发应用的首选模式。</p>
-<h2 id="安装APR"><a href="#安装APR" class="headerlink" title="安装APR"></a>安装APR</h2><blockquote>
-<p>安装gcc</p>
-</blockquote>
-<p>查看gcc是否安装，gcc –version，没有安装的话进行安装</p>
-<blockquote>
-<p>下载tomcat、apr、apr-util、openssl</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget https://mirrors.tuna.tsinghua.edu.cn/apache/tomcat/tomcat-7/v7.0.72/bin/apache-tomcat-7.0.72.tar.gz</span><br><span class="line">wget http://mirrors.tuna.tsinghua.edu.cn/apache/apr/apr-1.5.2.tar.gz</span><br><span class="line">wget http://mirrors.tuna.tsinghua.edu.cn/apache/apr/apr-util-1.5.4.tar.gz</span><br><span class="line"></span><br><span class="line">wget https://www.openssl.org/source/openssl-1.0.2k.tar.gz</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>编译apr</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo mkdir /usr/local/apr</span><br><span class="line">sudo chown hadoop:hadoop /usr/local/apr</span><br><span class="line">cd apr-1.5.2</span><br><span class="line">./configure &amp;&amp; make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>编译apr-util</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd apr-util-1.5.4</span><br><span class="line">./configure --with-apr=/usr/local/apr/ &amp;&amp; make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>编译openssl</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo mkdir /usr/local/ssl</span><br><span class="line">sudo chown hadoop:hadoop /usr/local/ssl</span><br><span class="line">./config  -fPIC no-gost no-shared no-zlib &amp;&amp; make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>编译tomcat-native</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd apache-tomcat-7.0.70/bin/</span><br><span class="line">tar xzvf tomcat-native.tar.gz</span><br><span class="line">cd tomcat-native-1.2.7-src/native/</span><br><span class="line">./configure CFLAGS=-fPIC --with-apr=/usr/local/apr/ --with-java-home=/usr/java/jdk1.8.0_131  --with-ssl=/usr/local/ssl &amp;&amp; make install</span><br></pre></td></tr></table></figure>
-<h2 id="配置Tomcat使用APR运行模式"><a href="#配置Tomcat使用APR运行模式" class="headerlink" title="配置Tomcat使用APR运行模式"></a>配置Tomcat使用APR运行模式</h2><blockquote>
-<p>修改apache-tomcat-7.0.70/bin/catalina.sh文件</p>
-</blockquote>
-<p>添加CATALINA_OPTS=”$CATALINA_OPTS -Djava.library.path=/usr/local/apr/lib”</p>
-<blockquote>
-<p>修改apache-tomcat-7.0.70/conf/server.xml 文件</p>
-</blockquote>
-<p>将protocol由HTTP/1.1 改成 org.apache.coyote.http11.Http11AprProtocol</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;Connector port=&quot;8080&quot; protocol=&quot;org.apache.coyote.http11.Http11AprProtocol&quot;</span><br><span class="line">		   connectionTimeout=&quot;20000&quot;</span><br><span class="line">		   redirectPort=&quot;8443&quot; /&gt;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>修改内存(apache-tomcat-7.0.70/bin/catalina.sh)</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JAVA_OPTS=&quot;-server -Xmx8g -Xms8g -Xss256k -XX:+DisableExplicitGC -XX:LargePageSizeInBytes=128m -XX:+UseFastAccessorMethods -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=50 -XX:G1ReservePercent=15&quot;</span><br></pre></td></tr></table></figure>
-<h2 id="压测"><a href="#压测" class="headerlink" title="压测"></a>压测</h2><p>使用apache ab压测</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ab -kc 1000 -n 10000 http://localhost/</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1780,7 +1792,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">32</span>
+                  <span class="site-state-item-count">33</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1793,7 +1805,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-count">19</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
