@@ -252,6 +252,186 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/19/《Spark知识梳理》-一、Spark基本概念/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/11/19/《Spark知识梳理》-一、Spark基本概念/" itemprop="url">《Spark知识梳理》 一、Spark基本概念</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-11-19T13:40:07+08:00">
+                2019-11-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>《Spark 知识梳理》系列文章主要是通过阅读《Spark内核设计的艺术》书籍，整理的一些个人笔记。</p>
+<h2 id="Spark-特点"><a href="#Spark-特点" class="headerlink" title="Spark 特点"></a>Spark 特点</h2><blockquote>
+<p>减少磁盘IO</p>
+</blockquote>
+<p>Spark 将 map 端中间结果存在内存中。</p>
+<blockquote>
+<p>增加并行度</p>
+</blockquote>
+<p>对 Job 划分成多个 Stage，有些 Stage 可以并行执行，增加并行度。</p>
+<blockquote>
+<p>避免重复计算</p>
+</blockquote>
+<p>任务失败重新调度时，会过滤掉执行成功的分区任务。</p>
+<blockquote>
+<p>可选的 Shuffle 排序</p>
+</blockquote>
+<p>Spark 可根据不同场景选择在 map 端或是 reduce 端进行 Shuffle 排序</p>
+<blockquote>
+<p>灵活的内存管理</p>
+</blockquote>
+<p>Spark 将内存分为，堆上存储内存、堆外存储内存、堆上执行内存和堆外执行内存，并且提供了存储内存和执行内存之间动态占用空闲区域。</p>
+<blockquote>
+<p>检查点 </p>
+</blockquote>
+<p>启用检查点会保存 RDD 计算的结果，失败重建时不需要重新计算 RDD。</p>
+<h2 id="Spark-基础知识"><a href="#Spark-基础知识" class="headerlink" title="Spark 基础知识"></a>Spark 基础知识</h2><blockquote>
+<p>RDD</p>
+</blockquote>
+<p>RDD（Resilient Distributed Dataset），弹性分布式数据集。</p>
+<blockquote>
+<p>DAG</p>
+</blockquote>
+<p>DAG（Directed Acycle Graph），有向无环图。反应 RDD 之间的依赖。</p>
+<blockquote>
+<p>Partition</p>
+</blockquote>
+<p>一个 RDD 可以划分成多个 Partition，Spark 根据 Partition 的数量确定 Task 的数量。</p>
+<blockquote>
+<p>NarrowDependency</p>
+</blockquote>
+<p>NarrowDependency（窄依赖），子 RDD 依赖于父 RDD 固定的 Partition。分为 OneToOneDependency 和 RangeDependency。</p>
+<blockquote>
+<p>ShuffleDependency</p>
+</blockquote>
+<p>ShuffleDependency（宽依赖），子 RDD 对父 RDD 中所有的 Partition 都有可能产生依赖，具体依赖取决于分区计算器（Partitioner）的算法。</p>
+<blockquote>
+<p>Job</p>
+</blockquote>
+<p>用户提交的作业。</p>
+<blockquote>
+<p>Stage</p>
+</blockquote>
+<p>Job 执行阶段。DAGScheduler 按照 ShuffleDependency 作为 Stage 划分节点对 RDD 的 DAG 进行 Stage 划分（上游 Stage 作为 ShuffleMapStage）。Stage 分为 ShuffleMapStage 和 ResultStage。</p>
+<blockquote>
+<p>Task</p>
+</blockquote>
+<p>具体执行的任务。一个 Job 在每个 Stage 都会按照 RDD 的 Partition 数量创建 Task。Task 分为 ShuffleMapTask（类似 map） 和 ResultTask（类似  reduce）。</p>
+<blockquote>
+<p>Shuffle</p>
+</blockquote>
+<p>Shuffle 是 map 任务输出到 reduce 任务输入的中间处理过程。将 map 任务的输出按照指定的分区策略（如，按 key 的 hash 值）分配给某个分区的 reduce 任务。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/12/Nginx配置指南/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1608,140 +1788,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/10/16/Kafka概述/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/10/16/Kafka概述/" itemprop="url">Kafka概述</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-16T15:30:41+08:00">
-                2018-10-16
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><h3 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h3><ul>
-<li>构造实时流数据管道，它可以在系统或应用之间可靠地获取数据。(相当于message queue)</li>
-<li>构建实时流式应用程序，对这些流数据进行转换或者影响。 (就是流处理，通过kafka stream topic和topic之间内部进行变化)</li>
-</ul>
-<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><ul>
-<li>Kafka 作为一个集群，运行在一台或者多台服务器上.</li>
-<li>Kafka 通过 topic 对存储的流数据进行分类。</li>
-<li>每条记录中包含一个key，一个value和一个timestamp。</li>
-</ul>
-<h3 id="四个核心API"><a href="#四个核心API" class="headerlink" title="四个核心API"></a>四个核心API</h3><ul>
-<li>Producer API 允许一个应用程序发布一串流式的数据到一个或者多个Kafka topic。</li>
-<li>Consumer API 允许一个应用程序订阅一个或多个 topic ，并且对发布给他们的流式数据进行处理。</li>
-<li>Streams API 允许一个应用程序作为一个流处理器，消费一个或者多个topic产生的输入流，然后生产一个输出流到一个或多个topic中去，在输入输出流中进行有效的转换。</li>
-<li>Connector API 允许构建并运行可重用的生产者或者消费者，将Kafka topics连接到已存在的应用程序或者数据系统。比如，连接到一个关系型数据库，捕捉表（table）的所有变更内容。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1792,7 +1838,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">33</span>
+                  <span class="site-state-item-count">34</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
