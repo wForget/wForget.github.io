@@ -89,7 +89,7 @@
 <meta property="og:locale" content="default">
 <meta property="og:image" content="http://yoursite.com/2020/12/14/Gremlin-Server-Console-适配-Atlas-JanusGraph/console.png">
 <meta property="og:image" content="http://yoursite.com/2020/12/14/Gremlin-Server-Console-适配-Atlas-JanusGraph/graphexp.png">
-<meta property="og:updated_time" content="2020-12-25T09:49:07.784Z">
+<meta property="og:updated_time" content="2020-12-25T09:52:52.797Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Gremlin Server&#x2F;Console 适配 Atlas JanusGraph">
 <meta name="twitter:description" content="Gremlin Server/Console 适配 Atlas JanusGraphAtlas 底层存储使用的 JanusGraph，由于对于 Atlas 底层数据结构并不太清楚，所以希望能够通过 Gremlin Console 来操作 Atlas 的 JanusGraph，使用 Gremlin Query Language 执行一些更加灵活的查询，并直观的查询数据结构。适配的思路参考了 dock">
@@ -354,6 +354,8 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// hive_table where qualifiedName = &quot;aaa.test@test&quot;</span><br><span class="line">g = graph.traversal()</span><br><span class="line">g.V().has(&quot;__typeName&quot;, &quot;hive_table&quot;).has(&quot;Referenceable.qualifiedName&quot;, &quot;aaa.test@test&quot;).values()</span><br></pre></td></tr></table></figure>
 <p>查看 Graph 的一些信息</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mgmt = graph.openManagement()</span><br><span class="line"></span><br><span class="line">mgmt.printVertexLabels()	// 打印 VertexLabels 信息</span><br><span class="line">mgmt.printEdgeLabels()		// 打印 EdgeLabels 信息</span><br><span class="line">mgmt.printPropertyKeys()	// 打印 PropertyKeys 信息</span><br><span class="line">mgmt.printIndexes()			// 打印所有索引信息</span><br><span class="line"></span><br><span class="line">mgmt.printSchema()    // 打印 Schema，包括上面的所有信息</span><br><span class="line"></span><br><span class="line">index = mgmt.getGraphIndex(&quot;vertex_index&quot;);  // 获取索引对象</span><br></pre></td></tr></table></figure>
+<p>查询 Patch 节点信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">g.V().has(&quot;patch.type&quot;, &quot;TYPEDEF_PATCH&quot;)</span><br><span class="line"></span><br><span class="line">g.V().has(&quot;patch.type&quot;, &quot;JAVA_PATCH&quot;)</span><br></pre></td></tr></table></figure>
 <h3 id="Graphexp-安装"><a href="#Graphexp-安装" class="headerlink" title="Graphexp 安装"></a>Graphexp 安装</h3><img src="/2020/12/14/Gremlin-Server-Console-适配-Atlas-JanusGraph/graphexp.png" title="[Graphexp]">
 <p>Graphexp 是一个前端项目，结合 gremlin server 提供图数据的可视化。项目地址：<a href="https://github.com/bricaud/graphexp" target="_blank" rel="noopener">https://github.com/bricaud/graphexp</a></p>
 <p>拉取 github 代码，安装 Nginx 并进行如下配置。完成后访问：<a href="http://localhost:9990/graphexp.html" target="_blank" rel="noopener">http://localhost:9990/graphexp.html</a></p>
