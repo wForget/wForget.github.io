@@ -252,6 +252,162 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/09/26/Druid构架/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/09/26/Druid构架/" itemprop="url">Druid构架</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-26T13:24:39+08:00">
+                2018-09-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Druid系统架构"><a href="#Druid系统架构" class="headerlink" title="Druid系统架构"></a>Druid系统架构</h2><img src="/2018/09/26/Druid构架/Druid构架.png" title="[Druid构架图]">
+<blockquote>
+<p>Historical</p>
+</blockquote>
+<p>历史节点对历史数据进行存储和查询，从Deep Storage下载Segment，然后响应Broker对于Segment的查询将查询结果返回给Broker节点，通过Zookeeper来声明自己存储的节点，同时也通过zookeeper来监听加载或删除Segment的信号，不接受写入操作。</p>
+<blockquote>
+<p>MiddleManager</p>
+</blockquote>
+<p>MiddleManager节点摄入新的数据到集群中，从外部数据源中读取数据并生成新的Segment。</p>
+<blockquote>
+<p>Broker</p>
+</blockquote>
+<p>Broker节点从外部客户端接收查询，并将这些查询转发给Historicals和MiddleManagers。当Brokers收到返回的结果时，它会合并这些结果并将它们返回给调用者。Druid的查询时通过请求Broker节点，而不是直接查询Historicals或MiddleManagers。</p>
+<blockquote>
+<p>Coordinator</p>
+</blockquote>
+<p>协调节点负责监控历史节点，将Segment分配给特定服务器，确保Segment在历史节点之间保持平衡。</p>
+<blockquote>
+<p>Overlord</p>
+</blockquote>
+<p>Overlord节点负责监控MiddleManager节点并控制数据摄入到Druid中。它将摄入数据的任务分配给MiddleManager节点，并协调Segment的发布。</p>
+<blockquote>
+<p>Router</p>
+</blockquote>
+<p>Router是一个可选的进程，在Brokers、Overlords和Coordinators前提供统一的网关。</p>
+<h2 id="外部依赖"><a href="#外部依赖" class="headerlink" title="外部依赖"></a>外部依赖</h2><blockquote>
+<p>Deep storage</p>
+</blockquote>
+<p>Druid使用它来存储已被摄入系统的任何数据。通常是分布式存储系统，如S3、HDFS 或 a network mounted filesystem。</p>
+<blockquote>
+<p>Metadata store</p>
+</blockquote>
+<p>存储元数据，通常是传统的关系数据库，如：PostgreSQL、MySQL。</p>
+<blockquote>
+<p>ZooKeeper</p>
+</blockquote>
+<p>ZooKeeper用于内部服务发现，协调和领导者选举。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/09/26/HBase-MapReduce简单实例/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1103,7 +1259,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">36</span>
+                  <span class="site-state-item-count">37</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1116,7 +1272,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">23</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

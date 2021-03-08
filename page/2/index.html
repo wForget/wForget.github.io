@@ -252,6 +252,152 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/12/调度系统工作流（DAG）/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/05/12/调度系统工作流（DAG）/" itemprop="url">调度系统工作流（DAG）</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-05-12T13:50:38+08:00">
+                2020-05-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="调度系统工作流（DAG）"><a href="#调度系统工作流（DAG）" class="headerlink" title="调度系统工作流（DAG）"></a>调度系统工作流（DAG）</h2><p>DAG是有向无环图的意思，调度系统中工作流就是以DAG的方式组织Task的依赖关系。</p>
+<h2 id="公司自研调度系统工作流"><a href="#公司自研调度系统工作流" class="headerlink" title="公司自研调度系统工作流"></a>公司自研调度系统工作流</h2><h3 id="相关概念"><a href="#相关概念" class="headerlink" title="相关概念"></a>相关概念</h3><ol>
+<li>Job<br> 定义执行的任务和调度策略。</li>
+<li>DAG<br> 组织 Job  之间的依赖关系。</li>
+<li>Task<br> 系统根据 Job 调度策略生成的执行任务。</li>
+</ol>
+<h3 id="调度过程"><a href="#调度过程" class="headerlink" title="调度过程"></a>调度过程</h3><ol>
+<li>创建 Job （根据需要创建  DAG）</li>
+<li>JobManager 根据 Job 的调度策略定时创建 Task，没有依赖的 Job 的 Task 直接标记为准备执行状态，有依赖的 Job 的 Task 标记为初始化的状态（父任务执行完成后触发状态修改）。</li>
+<li>任务调度器获取准备执行状态的 Task，根据一些权限资源的限制和 Workers  的状态给 Task 分配最合适的 Worker，并将任务下发到 WorkerManager。</li>
+<li>WorkerManager 接收到任务下发的请求，再将任务发送到指定的 Worker。</li>
+<li>Worker 接收任务并执行，执行完成后向上回馈状态。</li>
+<li>JobManager 接收到 Task 执行的回馈，触发子 Job 对应时间节点的 Task 状态修改。</li>
+</ol>
+<h2 id="Dolphin-Scheduler-工作流"><a href="#Dolphin-Scheduler-工作流" class="headerlink" title="Dolphin Scheduler 工作流"></a>Dolphin Scheduler 工作流</h2><h3 id="相关概念-1"><a href="#相关概念-1" class="headerlink" title="相关概念"></a>相关概念</h3><ol>
+<li>流程定义<br> 以拖拽的方式组织任务节点间的依赖，形成可视化的 DAG。</li>
+<li>流程实例<br> 流程实例是流程定义的实例化，通过定时调度或者手动调度可以对流程进行实例化并生成流程实例。</li>
+<li>任务实例<br> 任务实例是流程定义中的任务节点的实例，关联着一个流程实例，是具体执行的最小单位。</li>
+<li>调度方式<br> 调度方式包括定时调度和手动调度。定时调度是系统采用 Quartz 调度器根据配置的 Cron 策略定时生成流程实例的过程。手动调度是用户手动触发一次流程实例化的过程。</li>
+</ol>
+<h3 id="调度过程-1"><a href="#调度过程-1" class="headerlink" title="调度过程"></a>调度过程</h3><ol>
+<li>定义流程</li>
+<li>配置调度方式</li>
+<li>系统根据调度的方式生成流程实例</li>
+<li>Master 抽取需要执行的流程实例，并根据任务的依赖关系，生成一系列的任务实例，并放入任务的队列中（Master 会等待整个流程实例执行完成，根据依赖任务的执行状态，来控制任务实例的生成）。</li>
+<li>Worker 节点根据自身的运行情况，去任务队列中获取需要执行的任务实例并运行。</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/12/Hive-SQL的编译过程/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1609,164 +1755,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/27/Spring注解总结/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/11/27/Spring注解总结/" itemprop="url">Spring注解总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-11-27T17:19:28+08:00">
-                2018-11-27
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Spring注解总结"><a href="#Spring注解总结" class="headerlink" title="Spring注解总结"></a>Spring注解总结</h2><h3 id="Autowired"><a href="#Autowired" class="headerlink" title="@Autowired"></a>@Autowired</h3><p>@Autowired 注解，自动装配，默认按类型匹配的方式，在容器查找匹配的 Bean，当有且仅有一个匹配的 Bean 时，Spring 将其注入 @Autowired 标注的变量中。<br>@Autowired 注解有一个 required 属性，默认为 true，当没有找到相应的 Bean 对象时会抛出异常，如果不想抛出异常可以将 required 设置为 false。</p>
-<h3 id="Qualifier"><a href="#Qualifier" class="headerlink" title="@Qualifier"></a>@Qualifier</h3><p>如果容器中有一个以上匹配的 Bean，则可以通过 @Qualifier 注解限定Bean的名称，与 @Autowired 配合使用。value 属性指定 Bean 的名称。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">@Autowired</span><br><span class="line">@Qualifier(value=&quot;beanName&quot;)</span><br></pre></td></tr></table></figure>
-<h3 id="Resource"><a href="#Resource" class="headerlink" title="@Resource"></a>@Resource</h3><p>@Resource 注解与 @Autowired 注解作用非常相似。</p>
-<p>@Resource的装配顺序：</p>
-<ol>
-<li>@Resource 后面没有任何内容，默认通过 Name 属性去匹配 Bean，找不到再按 Type去匹配</li>
-<li>指定了 Name 或者 Type 则根据指定的 Name 或者 Type 去匹配 Bean</li>
-<li>指定了 Name 和 Type 则根据指定的 Name 和 Type 去匹配 Bean，任何一个不匹配都将报错</li>
-</ol>
-<p>@Autowired和@Resource两个注解的区别：</p>
-<ol>
-<li>@Autowired 默认按照 byType 方式进行 Bean 匹配，@Resource 默认按照 byName 方式进行 Bean 匹配</li>
-<li>@Autowired 是 Spring 的注解，@Resource 是 J2EE 的注解</li>
-</ol>
-<h3 id="Component-Repository-Service-Controller"><a href="#Component-Repository-Service-Controller" class="headerlink" title="@Component/@Repository/@Service/@Controller"></a>@Component/@Repository/@Service/@Controller</h3><p>@Component/@Repository/@Service/@Controller 可以向 Spring 容器注册 Bean。<br>需要在 applicationContext.xml 中注册 &lt;context:component-scan base-package=”pagkage1[,pagkage2,…,pagkageN]”/&gt;，或者使用 @ComponentScan 注解指定扫描包。</p>
-<blockquote>
-<p>@Component</p>
-</blockquote>
-<p>@Component 是所有受 Spring 管理的组件的通用形式，@Component 注解可以放在类的头上，@Component 不推荐使用。</p>
-<blockquote>
-<p>@Repository</p>
-</blockquote>
-<p>@Repository 对应数据访问层（Dao 层） Bean。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Repository</span>(value=<span class="string">"userDao"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDaoImpl</span> <span class="keyword">extends</span> <span class="title">BaseDaoImpl</span>&lt;<span class="title">User</span>&gt; </span>&#123;</span><br><span class="line">    <span class="comment">// TODO</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>@Service</p>
-</blockquote>
-<p>@Service 对应的是业务层（Service 层） Bean。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span>(<span class="string">"userService"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl</span> <span class="keyword">implements</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">    <span class="comment">// TODO</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>@Controller</p>
-</blockquote>
-<p>@Controller 对应表现层（Action 层） Bean。<br>value 属性用来指定 Bean 的名称，默认的名字为这个类的类名首字母小写。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@Scope</span>(<span class="string">"prototype"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line">    <span class="comment">// TODO</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里的还使用了 @Scope 注解，@Scope(“prototype”) 表示将 Controller 的范围声明为原型，保证每一个请求都 new 一个 Controller 对象来处理。<br>Spring 默认 scope 是单例模式(scope=”singleton”)，表示只会创建一个对象，每次访问都是同一对象。</p>
-<h3 id="Configuration"><a href="#Configuration" class="headerlink" title="@Configuration"></a>@Configuration</h3><p>@Configuration 用于定义配置类，可替换 xml 配置文件，被注解的类内部包含有一个或多个被 @Bean 注解的方法，这些方法将会被 AnnotationConfigApplicationContext 或 AnnotationConfigWebApplicationContext 类进行扫描，并用于构建 Bean 定义，初始化 Spring 容器。</p>
-<h3 id="ConfigurationProperties-EnableConfigurationProperties"><a href="#ConfigurationProperties-EnableConfigurationProperties" class="headerlink" title="@ConfigurationProperties/@EnableConfigurationProperties"></a>@ConfigurationProperties/@EnableConfigurationProperties</h3><p>@ConfigurationProperties 注解主要用来把 Properties 配置文件转化为 Bean 来使用的，而 @EnableConfigurationProperties 注解的作用是 @ConfigurationProperties 注解生效。<br>如果只配置 @ConfigurationProperties 注解，在 IOC 容器中是获取不到 Properties 配置文件转化的 Bean 的。<br>@ConfigurationProperties 注解可以把 Properties 文件转化为 Bean，然后使用 @Component 注解把该 Bean 注入到 IOC 容器中。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">@Component</span><br><span class="line">/*prefix定义配置文件中属性*/</span><br><span class="line">@ConfigurationProperties(prefix=&quot;local&quot;)</span><br><span class="line">public class ComponentProperties &#123;</span><br><span class="line">	// TODO</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">@Configuration 把一个类作为一个IoC容器，它的某个方法头上如果注册了@Bean，就会作为这个Spring容器中的Bean。</span><br><span class="line">@Lazy(true) 表示延迟初始化</span><br><span class="line">@Service 用于标注业务层组件、 </span><br><span class="line">@Controller 用于标注控制层组件（如struts中的action）</span><br><span class="line">@Repository 用于标注数据访问组件，即DAO组件。</span><br><span class="line">@Component 泛指组件，当组件不好归类的时候，我们可以使用这个注解进行标注。</span><br><span class="line">@Scope 用于指定scope作用域的（用在类上）</span><br><span class="line">@PostConstruct 用于指定初始化方法（用在方法上）</span><br><span class="line">@PreDestory 用于指定销毁方法（用在方法上）</span><br><span class="line">@DependsOn 定义Bean初始化及销毁时的顺序</span><br><span class="line">@Primary 自动装配时当出现多个Bean候选者时，被注解为@Primary的Bean将作为首选者，否则将抛出异常</span><br><span class="line">@Autowired 默认按类型装配，如果我们想使用按名称装配，可以结合@Qualifier注解一起使用。如下：</span><br><span class="line">@Autowired @Qualifier(&quot;personDaoBean&quot;) 存在多个实例配合使用</span><br><span class="line">@Resource 默认按名称装配，当找不到与名称匹配的bean才会按类型装配。</span><br><span class="line">@Async 异步方法调用</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1817,7 +1805,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">36</span>
+                  <span class="site-state-item-count">37</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1830,7 +1818,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">23</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

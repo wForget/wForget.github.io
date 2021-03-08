@@ -252,6 +252,148 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2021/03/08/JanusGraph-OLAP-Traversals-with-Spark-On-Yarn-Client-Mode/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2021/03/08/JanusGraph-OLAP-Traversals-with-Spark-On-Yarn-Client-Mode/" itemprop="url">JanusGraph: OLAP Traversals with Spark On Yarn-Client Mode</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2021-03-08T15:11:49+08:00">
+                2021-03-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h3><p>JanusGraph 支持使用 Spark 进行一些 OLAP 计算。官方文档中只给出了 Spark Local 模式和 Spark Standalone Cluster 模式的例子。参考：<a href="https://docs.janusgraph.org/advanced-topics/hadoop/" target="_blank" rel="noopener">JanusGraph with TinkerPop’s Hadoop-Gremlin</a></p>
+<p>由于我们的大部分 Spark 是运行在 Yarn 上面的，尝试通过 Gremlin Console 使用 Spark On Yarn-Client 模型运行 JanusGraph 的 OLAP 任务。</p>
+<p>JanusGraph 我们是用于 Atlas 的存储，也做一些 Atlas 的适配。</p>
+<p>版本信息：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">JanusGraph: 0.5.1</span><br><span class="line">Spark: 2.4.0</span><br><span class="line">Hadoop: 2.7.7</span><br><span class="line">Atlas 2.1.0</span><br></pre></td></tr></table></figure></p>
+<h3 id="环境适配"><a href="#环境适配" class="headerlink" title="环境适配"></a>环境适配</h3><h4 id="打包安装"><a href="#打包安装" class="headerlink" title="打包安装"></a>打包安装</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mvn clean install -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true</span><br><span class="line"></span><br><span class="line"># 安装包</span><br><span class="line">janusgraph-dist/target/janusgraph-0.5.1.zip</span><br></pre></td></tr></table></figure>
+<h4 id="依赖整理"><a href="#依赖整理" class="headerlink" title="依赖整理"></a>依赖整理</h4><p>由于 Janusgraph-Hadoop 并没有引入 spark-yarn 和  相关 jar 包。所以想要支持 Spark On Yarn 模式运行必须要加入相关的依赖。<br>直接下载 Spark 2.4.0 的安装包，将 jars 里面的 jar 包放在 ${JANUSGRAPH_HOME}/ext/spark/jars 中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">wget https://archive.apache.org/dist/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz</span><br><span class="line">tar xzvf spark-2.4.0-bin-hadoop2.7.tgz</span><br><span class="line">cp $&#123;SPARK_HOME&#125;/jars/* $&#123;JANUSGRAPH_HOME&#125;/ext/spark/jars</span><br><span class="line"></span><br><span class="line"># 去掉冲突 Jar 包</span><br><span class="line">rm -f $&#123;JANUSGRAPH_HOME&#125;/ext/spark/jars/guava-14.0.1.jar</span><br></pre></td></tr></table></figure>
+<p>需要支持 Atlas，顾也加上 Atlas 相关 Jar 包。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cp $&#123;ATLAS_HOME&#125;/server/webapp/atlas/WEB-INF/lib/* $&#123;JANUSGRAPH_HOME&#125;/ext/atlas/jars</span><br><span class="line"></span><br><span class="line"># 去掉冲突 Jar 包</span><br><span class="line">rm -f $&#123;JANUSGRAPH_HOME&#125;/ext/atlas/jars/atlas-webapp-2.1.0.jar</span><br><span class="line">rm -f $&#123;JANUSGRAPH_HOME&#125;/ext/atlas/jars/netty-3.10.5.Final.jar</span><br><span class="line">rm -f $&#123;JANUSGRAPH_HOME&#125;/ext/atlas/jars/netty-all-4.0.52.Final.jar</span><br></pre></td></tr></table></figure>
+<h4 id="启动脚本"><a href="#启动脚本" class="headerlink" title="启动脚本"></a>启动脚本</h4><p>编辑 gremlin.sh，做了如下配置：</p>
+<ul>
+<li>配置 SPARK_HOME</li>
+<li>配置 HADOOP_CONF_DIR 和 HBASE_CONF_DIR 并加入 CLASSPATH</li>
+<li>配置 HADOOP_GREMLIN_LIBS，通过 SparkContext addJar 方式引入依赖。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">export SPARK_HOME=$&#123;JANUSGRAPH_HOME&#125;/ext/spark</span><br><span class="line">export HADOOP_GREMLIN_LIBS=$&#123;JANUSGRAPH_HOME&#125;/ext/spark:$&#123;JANUSGRAPH_HOME&#125;/ext/atlas:$&#123;JANUSGRAPH_HOME&#125;/lib</span><br><span class="line">export HADOOP_CONF_DIR=/etc/hadoop/conf</span><br><span class="line">export HBASE_CONF_DIR=/etc/hbase/conf</span><br><span class="line">export CLASSPATH=$CLASSPATH:$HADOOP_CONF_DIR:HBASE_CONF_DIR</span><br></pre></td></tr></table></figure>
+<h3 id="JanusGraph-配置"><a href="#JanusGraph-配置" class="headerlink" title="JanusGraph 配置"></a>JanusGraph 配置</h3><h4 id="hadoop-graph-配置"><a href="#hadoop-graph-配置" class="headerlink" title="hadoop-graph 配置"></a>hadoop-graph 配置</h4><p>JanusGraph 后端使用 HBase 作为存储。</p>
+<p>配置 ${JANUSGRAPH_HOME}/conf/hadoop-graph/read-hbase.properties</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Hadoop Graph Configuration</span><br><span class="line">#</span><br><span class="line">gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph</span><br><span class="line">gremlin.hadoop.graphReader=org.janusgraph.hadoop.formats.hbase.HBaseInputFormat</span><br><span class="line">gremlin.hadoop.graphWriter=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat</span><br><span class="line"></span><br><span class="line">gremlin.hadoop.jarsInDistributedCache=true</span><br><span class="line">gremlin.hadoop.inputLocation=none</span><br><span class="line">gremlin.hadoop.outputLocation=output</span><br><span class="line">gremlin.spark.persistContext=true</span><br><span class="line"></span><br><span class="line">#</span><br><span class="line"># JanusGraph HBase InputFormat configuration</span><br><span class="line">#</span><br><span class="line">janusgraphmr.ioformat.conf.storage.backend=hbase</span><br><span class="line">janusgraphmr.ioformat.conf.storage.hostname=*****</span><br><span class="line">janusgraphmr.ioformat.conf.storage.hbase.table=apache_atlas_janus</span><br><span class="line"></span><br><span class="line">#</span><br><span class="line"># SparkGraphComputer Configuration</span><br><span class="line">#</span><br><span class="line">#spark.master=local[*]</span><br><span class="line">#spark.executor.memory=1g</span><br><span class="line">spark.master=yarn-client</span><br><span class="line">spark.executor.memory=2g</span><br><span class="line">spark.executor.instances=4</span><br><span class="line">spark.yarn.principal=******</span><br><span class="line">spark.yarn.keytab=******.keytab</span><br><span class="line">spark.serializer=org.apache.spark.serializer.KryoSerializer</span><br><span class="line">spark.kryo.registrator=org.janusgraph.hadoop.serialize.JanusGraphKryoRegistrator</span><br></pre></td></tr></table></figure>
+<h4 id="日志配置"><a href="#日志配置" class="headerlink" title="日志配置"></a>日志配置</h4><p>修改 ${JANUSGRAPH_HOME}/conf/log4j-console.properties 配置，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># 添加 Rolling_File Log Appender</span><br><span class="line">log4j.appender.Rolling_File=org.apache.log4j.RollingFileAppender</span><br><span class="line">log4j.appender.Rolling_File.Threshold=INFO</span><br><span class="line">log4j.appender.Rolling_File.File=logs/gremlin.log</span><br><span class="line">log4j.appender.Rolling_File.Append=true</span><br><span class="line">log4j.appender.Rolling_File.MaxFileSize=100MB</span><br><span class="line">log4j.appender.Rolling_File.MaxBackupIndex=10</span><br><span class="line">log4j.appender.Rolling_File.layout=org.apache.log4j.PatternLayout</span><br><span class="line">log4j.appender.Rolling_File.layout.ConversionPattern=%-d&#123;yyyy-MM-dd HH\:mm\:ss,SSS&#125; [%C]-[%p] %m%n</span><br><span class="line"></span><br><span class="line">log4j.rootLogger=$&#123;gremlin.log4j.level&#125;, A2, Rolling_File</span><br></pre></td></tr></table></figure>
+<h4 id="执行-Hive-Table-Count-任务"><a href="#执行-Hive-Table-Count-任务" class="headerlink" title="执行 Hive Table Count 任务"></a>执行 Hive Table Count 任务</h4><p>启动 Gremlin Console：bin/gremlin.sh （可加上 -l info 指定日志级别）。</p>
+<p>执行下面语句统计 hive_table 数量，可查看 logs/gremlin.log 日志信息，可以看到 Spark on yarn 的 application 信息。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">graph = GraphFactory.open(&apos;conf/hadoop-graph/read-hbase.properties&apos;)</span><br><span class="line">g = graph.traversal().withComputer(SparkGraphComputer)</span><br><span class="line">g.V().has(&quot;__typeName&quot;, &quot;hive_table&quot;).count()</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2021/02/24/Atlas-1-1-0-Full-GC-问题分析/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1544,152 +1686,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/12/调度系统工作流（DAG）/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2020/05/12/调度系统工作流（DAG）/" itemprop="url">调度系统工作流（DAG）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-05-12T13:50:38+08:00">
-                2020-05-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="调度系统工作流（DAG）"><a href="#调度系统工作流（DAG）" class="headerlink" title="调度系统工作流（DAG）"></a>调度系统工作流（DAG）</h2><p>DAG是有向无环图的意思，调度系统中工作流就是以DAG的方式组织Task的依赖关系。</p>
-<h2 id="公司自研调度系统工作流"><a href="#公司自研调度系统工作流" class="headerlink" title="公司自研调度系统工作流"></a>公司自研调度系统工作流</h2><h3 id="相关概念"><a href="#相关概念" class="headerlink" title="相关概念"></a>相关概念</h3><ol>
-<li>Job<br> 定义执行的任务和调度策略。</li>
-<li>DAG<br> 组织 Job  之间的依赖关系。</li>
-<li>Task<br> 系统根据 Job 调度策略生成的执行任务。</li>
-</ol>
-<h3 id="调度过程"><a href="#调度过程" class="headerlink" title="调度过程"></a>调度过程</h3><ol>
-<li>创建 Job （根据需要创建  DAG）</li>
-<li>JobManager 根据 Job 的调度策略定时创建 Task，没有依赖的 Job 的 Task 直接标记为准备执行状态，有依赖的 Job 的 Task 标记为初始化的状态（父任务执行完成后触发状态修改）。</li>
-<li>任务调度器获取准备执行状态的 Task，根据一些权限资源的限制和 Workers  的状态给 Task 分配最合适的 Worker，并将任务下发到 WorkerManager。</li>
-<li>WorkerManager 接收到任务下发的请求，再将任务发送到指定的 Worker。</li>
-<li>Worker 接收任务并执行，执行完成后向上回馈状态。</li>
-<li>JobManager 接收到 Task 执行的回馈，触发子 Job 对应时间节点的 Task 状态修改。</li>
-</ol>
-<h2 id="Dolphin-Scheduler-工作流"><a href="#Dolphin-Scheduler-工作流" class="headerlink" title="Dolphin Scheduler 工作流"></a>Dolphin Scheduler 工作流</h2><h3 id="相关概念-1"><a href="#相关概念-1" class="headerlink" title="相关概念"></a>相关概念</h3><ol>
-<li>流程定义<br> 以拖拽的方式组织任务节点间的依赖，形成可视化的 DAG。</li>
-<li>流程实例<br> 流程实例是流程定义的实例化，通过定时调度或者手动调度可以对流程进行实例化并生成流程实例。</li>
-<li>任务实例<br> 任务实例是流程定义中的任务节点的实例，关联着一个流程实例，是具体执行的最小单位。</li>
-<li>调度方式<br> 调度方式包括定时调度和手动调度。定时调度是系统采用 Quartz 调度器根据配置的 Cron 策略定时生成流程实例的过程。手动调度是用户手动触发一次流程实例化的过程。</li>
-</ol>
-<h3 id="调度过程-1"><a href="#调度过程-1" class="headerlink" title="调度过程"></a>调度过程</h3><ol>
-<li>定义流程</li>
-<li>配置调度方式</li>
-<li>系统根据调度的方式生成流程实例</li>
-<li>Master 抽取需要执行的流程实例，并根据任务的依赖关系，生成一系列的任务实例，并放入任务的队列中（Master 会等待整个流程实例执行完成，根据依赖任务的执行状态，来控制任务实例的生成）。</li>
-<li>Worker 节点根据自身的运行情况，去任务队列中获取需要执行的任务实例并运行。</li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1740,7 +1736,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">36</span>
+                  <span class="site-state-item-count">37</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1753,7 +1749,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">23</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

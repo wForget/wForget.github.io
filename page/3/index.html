@@ -252,6 +252,164 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/27/Spring注解总结/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/27/Spring注解总结/" itemprop="url">Spring注解总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-11-27T17:19:28+08:00">
+                2018-11-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Spring注解总结"><a href="#Spring注解总结" class="headerlink" title="Spring注解总结"></a>Spring注解总结</h2><h3 id="Autowired"><a href="#Autowired" class="headerlink" title="@Autowired"></a>@Autowired</h3><p>@Autowired 注解，自动装配，默认按类型匹配的方式，在容器查找匹配的 Bean，当有且仅有一个匹配的 Bean 时，Spring 将其注入 @Autowired 标注的变量中。<br>@Autowired 注解有一个 required 属性，默认为 true，当没有找到相应的 Bean 对象时会抛出异常，如果不想抛出异常可以将 required 设置为 false。</p>
+<h3 id="Qualifier"><a href="#Qualifier" class="headerlink" title="@Qualifier"></a>@Qualifier</h3><p>如果容器中有一个以上匹配的 Bean，则可以通过 @Qualifier 注解限定Bean的名称，与 @Autowired 配合使用。value 属性指定 Bean 的名称。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">@Autowired</span><br><span class="line">@Qualifier(value=&quot;beanName&quot;)</span><br></pre></td></tr></table></figure>
+<h3 id="Resource"><a href="#Resource" class="headerlink" title="@Resource"></a>@Resource</h3><p>@Resource 注解与 @Autowired 注解作用非常相似。</p>
+<p>@Resource的装配顺序：</p>
+<ol>
+<li>@Resource 后面没有任何内容，默认通过 Name 属性去匹配 Bean，找不到再按 Type去匹配</li>
+<li>指定了 Name 或者 Type 则根据指定的 Name 或者 Type 去匹配 Bean</li>
+<li>指定了 Name 和 Type 则根据指定的 Name 和 Type 去匹配 Bean，任何一个不匹配都将报错</li>
+</ol>
+<p>@Autowired和@Resource两个注解的区别：</p>
+<ol>
+<li>@Autowired 默认按照 byType 方式进行 Bean 匹配，@Resource 默认按照 byName 方式进行 Bean 匹配</li>
+<li>@Autowired 是 Spring 的注解，@Resource 是 J2EE 的注解</li>
+</ol>
+<h3 id="Component-Repository-Service-Controller"><a href="#Component-Repository-Service-Controller" class="headerlink" title="@Component/@Repository/@Service/@Controller"></a>@Component/@Repository/@Service/@Controller</h3><p>@Component/@Repository/@Service/@Controller 可以向 Spring 容器注册 Bean。<br>需要在 applicationContext.xml 中注册 &lt;context:component-scan base-package=”pagkage1[,pagkage2,…,pagkageN]”/&gt;，或者使用 @ComponentScan 注解指定扫描包。</p>
+<blockquote>
+<p>@Component</p>
+</blockquote>
+<p>@Component 是所有受 Spring 管理的组件的通用形式，@Component 注解可以放在类的头上，@Component 不推荐使用。</p>
+<blockquote>
+<p>@Repository</p>
+</blockquote>
+<p>@Repository 对应数据访问层（Dao 层） Bean。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Repository</span>(value=<span class="string">"userDao"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDaoImpl</span> <span class="keyword">extends</span> <span class="title">BaseDaoImpl</span>&lt;<span class="title">User</span>&gt; </span>&#123;</span><br><span class="line">    <span class="comment">// TODO</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>@Service</p>
+</blockquote>
+<p>@Service 对应的是业务层（Service 层） Bean。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span>(<span class="string">"userService"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl</span> <span class="keyword">implements</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">    <span class="comment">// TODO</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>@Controller</p>
+</blockquote>
+<p>@Controller 对应表现层（Action 层） Bean。<br>value 属性用来指定 Bean 的名称，默认的名字为这个类的类名首字母小写。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@Scope</span>(<span class="string">"prototype"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line">    <span class="comment">// TODO</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的还使用了 @Scope 注解，@Scope(“prototype”) 表示将 Controller 的范围声明为原型，保证每一个请求都 new 一个 Controller 对象来处理。<br>Spring 默认 scope 是单例模式(scope=”singleton”)，表示只会创建一个对象，每次访问都是同一对象。</p>
+<h3 id="Configuration"><a href="#Configuration" class="headerlink" title="@Configuration"></a>@Configuration</h3><p>@Configuration 用于定义配置类，可替换 xml 配置文件，被注解的类内部包含有一个或多个被 @Bean 注解的方法，这些方法将会被 AnnotationConfigApplicationContext 或 AnnotationConfigWebApplicationContext 类进行扫描，并用于构建 Bean 定义，初始化 Spring 容器。</p>
+<h3 id="ConfigurationProperties-EnableConfigurationProperties"><a href="#ConfigurationProperties-EnableConfigurationProperties" class="headerlink" title="@ConfigurationProperties/@EnableConfigurationProperties"></a>@ConfigurationProperties/@EnableConfigurationProperties</h3><p>@ConfigurationProperties 注解主要用来把 Properties 配置文件转化为 Bean 来使用的，而 @EnableConfigurationProperties 注解的作用是 @ConfigurationProperties 注解生效。<br>如果只配置 @ConfigurationProperties 注解，在 IOC 容器中是获取不到 Properties 配置文件转化的 Bean 的。<br>@ConfigurationProperties 注解可以把 Properties 文件转化为 Bean，然后使用 @Component 注解把该 Bean 注入到 IOC 容器中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">@Component</span><br><span class="line">/*prefix定义配置文件中属性*/</span><br><span class="line">@ConfigurationProperties(prefix=&quot;local&quot;)</span><br><span class="line">public class ComponentProperties &#123;</span><br><span class="line">	// TODO</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">@Configuration 把一个类作为一个IoC容器，它的某个方法头上如果注册了@Bean，就会作为这个Spring容器中的Bean。</span><br><span class="line">@Lazy(true) 表示延迟初始化</span><br><span class="line">@Service 用于标注业务层组件、 </span><br><span class="line">@Controller 用于标注控制层组件（如struts中的action）</span><br><span class="line">@Repository 用于标注数据访问组件，即DAO组件。</span><br><span class="line">@Component 泛指组件，当组件不好归类的时候，我们可以使用这个注解进行标注。</span><br><span class="line">@Scope 用于指定scope作用域的（用在类上）</span><br><span class="line">@PostConstruct 用于指定初始化方法（用在方法上）</span><br><span class="line">@PreDestory 用于指定销毁方法（用在方法上）</span><br><span class="line">@DependsOn 定义Bean初始化及销毁时的顺序</span><br><span class="line">@Primary 自动装配时当出现多个Bean候选者时，被注解为@Primary的Bean将作为首选者，否则将抛出异常</span><br><span class="line">@Autowired 默认按类型装配，如果我们想使用按名称装配，可以结合@Qualifier注解一起使用。如下：</span><br><span class="line">@Autowired @Qualifier(&quot;personDaoBean&quot;) 存在多个实例配合使用</span><br><span class="line">@Resource 默认按名称装配，当找不到与名称匹配的bean才会按类型装配。</span><br><span class="line">@Async 异步方法调用</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/08/Netty学习/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1625,162 +1783,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/09/26/Druid构架/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/26/Druid构架/" itemprop="url">Druid构架</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-26T13:24:39+08:00">
-                2018-09-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Druid系统架构"><a href="#Druid系统架构" class="headerlink" title="Druid系统架构"></a>Druid系统架构</h2><img src="/2018/09/26/Druid构架/Druid构架.png" title="[Druid构架图]">
-<blockquote>
-<p>Historical</p>
-</blockquote>
-<p>历史节点对历史数据进行存储和查询，从Deep Storage下载Segment，然后响应Broker对于Segment的查询将查询结果返回给Broker节点，通过Zookeeper来声明自己存储的节点，同时也通过zookeeper来监听加载或删除Segment的信号，不接受写入操作。</p>
-<blockquote>
-<p>MiddleManager</p>
-</blockquote>
-<p>MiddleManager节点摄入新的数据到集群中，从外部数据源中读取数据并生成新的Segment。</p>
-<blockquote>
-<p>Broker</p>
-</blockquote>
-<p>Broker节点从外部客户端接收查询，并将这些查询转发给Historicals和MiddleManagers。当Brokers收到返回的结果时，它会合并这些结果并将它们返回给调用者。Druid的查询时通过请求Broker节点，而不是直接查询Historicals或MiddleManagers。</p>
-<blockquote>
-<p>Coordinator</p>
-</blockquote>
-<p>协调节点负责监控历史节点，将Segment分配给特定服务器，确保Segment在历史节点之间保持平衡。</p>
-<blockquote>
-<p>Overlord</p>
-</blockquote>
-<p>Overlord节点负责监控MiddleManager节点并控制数据摄入到Druid中。它将摄入数据的任务分配给MiddleManager节点，并协调Segment的发布。</p>
-<blockquote>
-<p>Router</p>
-</blockquote>
-<p>Router是一个可选的进程，在Brokers、Overlords和Coordinators前提供统一的网关。</p>
-<h2 id="外部依赖"><a href="#外部依赖" class="headerlink" title="外部依赖"></a>外部依赖</h2><blockquote>
-<p>Deep storage</p>
-</blockquote>
-<p>Druid使用它来存储已被摄入系统的任何数据。通常是分布式存储系统，如S3、HDFS 或 a network mounted filesystem。</p>
-<blockquote>
-<p>Metadata store</p>
-</blockquote>
-<p>存储元数据，通常是传统的关系数据库，如：PostgreSQL、MySQL。</p>
-<blockquote>
-<p>ZooKeeper</p>
-</blockquote>
-<p>ZooKeeper用于内部服务发现，协调和领导者选举。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1831,7 +1833,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">36</span>
+                  <span class="site-state-item-count">37</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1844,7 +1846,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">23</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

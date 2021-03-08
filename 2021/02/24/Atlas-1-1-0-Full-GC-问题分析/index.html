@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="Atlas,Full GC," />
 
 
 
@@ -80,6 +80,7 @@
 
 
 <meta name="description" content="Atlas 1.1.0 Full GC 问题分析问题背景频繁接收到 Atlas 拨测告警，拨测程序是访问 atlas 查询 entity 的接口，一段时间都是 502 的返回，持续几分钟后恢复。查看 Atlas gc 日志，发现 Full GC 日志，并且持续时间和服务不可用时间吻合，基本确定就是由于 Full GC 导致。 GC LOG 分析JVM 相关参数调整查看 GC 日志发现，（concu">
+<meta name="keywords" content="Atlas,Full GC">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Atlas 1.1.0 Full GC 问题分析">
 <meta property="og:url" content="http://yoursite.com/2021/02/24/Atlas-1-1-0-Full-GC-问题分析/index.html">
@@ -94,7 +95,7 @@
 <meta property="og:image" content="http://yoursite.com/2021/02/24/Atlas-1-1-0-Full-GC-问题分析/vertex2.png">
 <meta property="og:image" content="http://yoursite.com/2021/02/24/Atlas-1-1-0-Full-GC-问题分析/vertex.png">
 <meta property="og:image" content="http://yoursite.com/2021/02/24/Atlas-1-1-0-Full-GC-问题分析/oql_count.png">
-<meta property="og:updated_time" content="2021-02-26T09:35:49.070Z">
+<meta property="og:updated_time" content="2021-03-08T07:12:57.590Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Atlas 1.1.0 Full GC 问题分析">
 <meta name="twitter:description" content="Atlas 1.1.0 Full GC 问题分析问题背景频繁接收到 Atlas 拨测告警，拨测程序是访问 atlas 查询 entity 的接口，一段时间都是 502 的返回，持续几分钟后恢复。查看 Atlas gc 日志，发现 Full GC 日志，并且持续时间和服务不可用时间吻合，基本确定就是由于 Full GC 导致。 GC LOG 分析JVM 相关参数调整查看 GC 日志发现，（concu">
@@ -398,6 +399,14 @@
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/Atlas/" rel="tag"># Atlas</a>
+          
+            <a href="/tags/Full-GC/" rel="tag"># Full GC</a>
+          
+        </div>
+      
 
       
       
@@ -416,6 +425,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/03/08/JanusGraph-OLAP-Traversals-with-Spark-On-Yarn-Client-Mode/" rel="prev" title="JanusGraph: OLAP Traversals with Spark On Yarn-Client Mode">
+                JanusGraph: OLAP Traversals with Spark On Yarn-Client Mode <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -495,7 +508,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">36</span>
+                  <span class="site-state-item-count">37</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -508,7 +521,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-count">23</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
