@@ -252,6 +252,138 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2019/02/22/《Phoenix使用总结》-二、Spark操作Phoenix/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/22/《Phoenix使用总结》-二、Spark操作Phoenix/" itemprop="url">《Phoenix使用总结》 二、Spark操作Phoenix</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-22T17:06:30+08:00">
+                2019-02-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Spark-操作-Phoenix"><a href="#Spark-操作-Phoenix" class="headerlink" title="Spark 操作 Phoenix"></a>Spark 操作 Phoenix</h2><p>由于之前的映射数据是存在 MongoDB 中，所以需要将 MongoDB 中的数据导入到 Phoenix 中。这里记录 Spark 对 Phoenix  的操作。</p>
+<blockquote>
+<p>Maven 依赖</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">  &lt;groupId&gt;org.apache.phoenix&lt;/groupId&gt;</span><br><span class="line">  &lt;artifactId&gt;phoenix-spark&lt;/artifactId&gt;</span><br><span class="line">  &lt;version&gt;$&#123;phoenix.version&#125;&lt;/version&gt;</span><br><span class="line">  &lt;scope&gt;provided&lt;/scope&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>从 Phoenix 读取数据</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">val rdd: RDD[Map[String, AnyRef]] = sparkContext.phoenixTableAsRDD(</span><br><span class="line">  &quot;TABLE1&quot;, Seq(&quot;ID&quot;, &quot;COL1&quot;), zkUrl = Some(&quot;phoenix-server:2181&quot;)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>写入 Phoenix</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">var matchIndexRDD = MongoSpark.load(sparkContext, ReadConfig(Map(&quot;uri&quot; -&gt; uri</span><br><span class="line">  , &quot;database&quot; -&gt; &quot;pubg&quot;</span><br><span class="line">  , &quot;collection&quot; -&gt; &quot;match_index&quot;)))</span><br><span class="line">  .filter(m =&gt; (StringUtils.isNotBlank(m.getString(&quot;lowerNickName&quot;)) &amp;&amp; m.getDate(&quot;startedAt&quot;) != null))</span><br><span class="line">  .map(m =&gt; (m.getString(&quot;lowerNickName&quot;), m.getDate(&quot;startedAt&quot;), m.getString(&quot;matchId&quot;)</span><br><span class="line">	, m.getString(&quot;mode&quot;), m.getInteger(&quot;queueSize&quot;), m.getInteger(&quot;totalRank&quot;), m.getString(&quot;type&quot;)))</span><br><span class="line">	</span><br><span class="line">matchIndexRDD.saveToPhoenix(</span><br><span class="line">  &quot;PUBG.MATCH_INDEX&quot;,</span><br><span class="line">  Seq(&quot;LOWERNICKNAME&quot;, &quot;STARTEDAT&quot;, &quot;MATCHID&quot;, &quot;MODE&quot;, &quot;QUEUESIZE&quot;, &quot;TOTALRANK&quot;, &quot;TYPE&quot;),</span><br><span class="line">  zkUrl = Some(&quot;datanode03:2181&quot;)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2019/02/21/《Phoenix使用总结》-一、使用背景/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1557,138 +1689,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/10/09/《Flume系列文章》-六、自定义Flume插件/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wangz">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/10/09/《Flume系列文章》-六、自定义Flume插件/" itemprop="url">《Flume系列文章》 六、自定义Flume插件</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-09T10:36:16+08:00">
-                2018-10-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="自定义Flume插件"><a href="#自定义Flume插件" class="headerlink" title="自定义Flume插件"></a>自定义Flume插件</h2><p>Flume的很多组件都是可以使用自定义的组件，可以自己实现Source、Channel、Sink，也可以编写Channel Selectors、Sink Processors、Interceptors、Monitoring等。每个组件的实现都是继承组件定义的接口，实现相关的方法，具体的实现可以参考Flume已经写好的组件。</p>
-<blockquote>
-<p>创建插件项目，继承组件的接口并实现相关方法</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public class DmpMemoryChannel extends BasicChannelSemantics &#123;</span><br><span class="line">	// TODO</span><br><span class="line">	// 在编写插件的时候可以通过context获取配置文件中的配置，可以自定义一些配置。</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>打Jar包，并放入到 plugins.d 目录中</p>
-</blockquote>
-<p>在plugins.d中创建dmp-flume-plugin/lib、dmp-flume-plugin/libext、dmp-flume-plugin/native目录，lib中放插件的Jar包，libext中放插件依赖的Jar包，native存放any required native libraries, such as .so files。</p>
-<blockquote>
-<p>配置组件</p>
-</blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">agent.channels.memoryChannel1.type = org.sndo.dmp.flume.channel.memory.DmpMemoryChannel</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1739,7 +1739,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">38</span>
+                  <span class="site-state-item-count">39</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1752,7 +1752,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-count">26</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

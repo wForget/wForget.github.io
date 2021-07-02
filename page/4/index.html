@@ -252,6 +252,138 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/10/09/《Flume系列文章》-六、自定义Flume插件/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wangz">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/10/09/《Flume系列文章》-六、自定义Flume插件/" itemprop="url">《Flume系列文章》 六、自定义Flume插件</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-10-09T10:36:16+08:00">
+                2018-10-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="自定义Flume插件"><a href="#自定义Flume插件" class="headerlink" title="自定义Flume插件"></a>自定义Flume插件</h2><p>Flume的很多组件都是可以使用自定义的组件，可以自己实现Source、Channel、Sink，也可以编写Channel Selectors、Sink Processors、Interceptors、Monitoring等。每个组件的实现都是继承组件定义的接口，实现相关的方法，具体的实现可以参考Flume已经写好的组件。</p>
+<blockquote>
+<p>创建插件项目，继承组件的接口并实现相关方法</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public class DmpMemoryChannel extends BasicChannelSemantics &#123;</span><br><span class="line">	// TODO</span><br><span class="line">	// 在编写插件的时候可以通过context获取配置文件中的配置，可以自定义一些配置。</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>打Jar包，并放入到 plugins.d 目录中</p>
+</blockquote>
+<p>在plugins.d中创建dmp-flume-plugin/lib、dmp-flume-plugin/libext、dmp-flume-plugin/native目录，lib中放插件的Jar包，libext中放插件依赖的Jar包，native存放any required native libraries, such as .so files。</p>
+<blockquote>
+<p>配置组件</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">agent.channels.memoryChannel1.type = org.sndo.dmp.flume.channel.memory.DmpMemoryChannel</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/09/28/Druid集群搭建/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1507,7 +1639,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">38</span>
+                  <span class="site-state-item-count">39</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1520,7 +1652,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-count">26</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>
