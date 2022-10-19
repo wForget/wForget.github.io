@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Kyuubi,Spark,Spark Thrift Server," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景提供 JDBC 服务，迁移 Hive SQL 。 提供 Ad-Hoc 查询能力。 Spark Thrift ServerSpark Thrift Server 是 Spark 社区基于 HiveServer2 协议实现的 Thrift 服务，提供 Spark SQL JDBC 服务。由于 Spark 进程常驻，提交请求后立即执行计算，响应迅速，可用于 Ad-Hoc 查询。 Spark Thri">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kyuubi 架构对比">
+<meta property="og:url" content="https://wforget.github.io/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="背景提供 JDBC 服务，迁移 Hive SQL 。 提供 Ad-Hoc 查询能力。 Spark Thrift ServerSpark Thrift Server 是 Spark 社区基于 HiveServer2 协议实现的 Thrift 服务，提供 Spark SQL JDBC 服务。由于 Spark 进程常驻，提交请求后立即执行计算，响应迅速，可用于 Ad-Hoc 查询。 Spark Thri">
+<meta property="og:locale">
+<meta property="og:image" content="https://wforget.github.io/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/sts.png">
+<meta property="og:image" content="https://wforget.github.io/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/kyuubi_architecture_0_X.png">
+<meta property="og:image" content="https://wforget.github.io/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/kyuubi_architecture_new.png">
+<meta property="article:published_time" content="2021-07-02T07:37:20.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.789Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Kyuubi">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="Spark Thrift Server">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wforget.github.io/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/sts.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2021/07/02/Kyuubi-架构对比/"/>
+
+
+
+
+
+  <title>Kyuubi 架构对比 | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Kyuubi 架构对比</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2021-07-02T15:37:20+08:00">
+                2021-07-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>提供 JDBC 服务，迁移 Hive SQL 。</p>
+<p>提供 Ad-Hoc 查询能力。</p>
+<h3 id="Spark-Thrift-Server"><a href="#Spark-Thrift-Server" class="headerlink" title="Spark Thrift Server"></a>Spark Thrift Server</h3><p>Spark Thrift Server 是 Spark 社区基于 HiveServer2 协议实现的 Thrift 服务，提供 Spark SQL JDBC 服务。由于 Spark 进程常驻，提交请求后立即执行计算，响应迅速，可用于 Ad-Hoc 查询。</p>
+<h4 id="Spark-Thrift-Server-架构"><a href="#Spark-Thrift-Server-架构" class="headerlink" title="Spark Thrift Server 架构"></a>Spark Thrift Server 架构</h4><p>Spark Thrift Server 是基于 SparkContext 多线程应用场景的实现。</p>
+<p>Spark 中一次 Action 算子对应一个 Job，提交一个 Job 后会等待执行完成，所以在单线程的场景下，Job 是顺序执行的。SparkContext 通过多线程提交 Job 时，不同的 Job 可并发提交执行。</p>
+<p>下图是 Spark Thrift Server 的架构。Spark Thrift Server 在启动时初始化一个 SparkContext。接受请求后，会新建或者复用 SparkSession, 并通过 SparkSession.sql() 进行执行，由于处理请求的线程不同，所以 SparkSession.sql() 提交的任务可以并发执行。</p>
+<img src="/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/sts.png" class="" title="SparkThriftServer">
+
+<h4 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>架构简单，方便部署运维。</li>
+<li>启动后常驻 Spark 相关服务，响应快。</li>
+<li>统一服务，隐藏集群配置，方便统一管理和优化。</li>
+</ul>
+<h4 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>单用户运行，不支持多用户访问</li>
+<li>资源不隔离</li>
+<li>不支持高可用</li>
+</ul>
+<h3 id="Kyuubi-0-7-0"><a href="#Kyuubi-0-7-0" class="headerlink" title="Kyuubi 0.7.0"></a>Kyuubi 0.7.0</h3><p>Kyuubi 是网易开源的增强版 Spark Thrift Server 实现。支持多租户、资源隔离、高可用等，使得 Spark Thrift Server 服务具有更好的可用性和稳定性。</p>
+<h4 id="Kyuubi-0-7-0-架构"><a href="#Kyuubi-0-7-0-架构" class="headerlink" title="Kyuubi 0.7.0 架构"></a>Kyuubi 0.7.0 架构</h4><p>Kyuubi 0.7.0 版本，实现用户 Session 级别的 SparkContext 的初始化、注册、缓存、回收机制。</p>
+<p>Kyuubi 接收到请求后可根据不同用户创建多个 SparkContext，启动多个  Spark 实例，从而实现多租户和资源隔离。</p>
+<h4 id="Kyuubi-0-7-0-高可用"><a href="#Kyuubi-0-7-0-高可用" class="headerlink" title="Kyuubi 0.7.0 高可用"></a>Kyuubi 0.7.0 高可用</h4><p>Kyuubi 0.7.0 版本，支持 Load Balance Mode 、Active&#x2F;Standby Failover 两种模式的高可用，通过 Zookeeper 作服务发现。</p>
+<p><strong>Load Balance Mode</strong>：负载均衡模式下，所有的 Kyuubi 服务都是活跃状态，这种模式下可以减轻 Kyuubi Server 的负载，提高服务的并发。不过会加大 Yarn 集群的负载，可能导致一个用户连接在不同的 Kyuubi Server 上，启动多个 SparkContext，造成集群资源浪费。</p>
+<p><strong>Active&#x2F;Standby Failover</strong>：主备故障切换模式下，只有一个几点是 Active 的状态对外提供服务，当 Active 节点发生故障时，Standby 节点选举成功后变成 Active 状态对外提供服务，从而达到高可用，不过此模式不会加大整体并发能力。</p>
+<img src="/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/kyuubi_architecture_0_X.png" class="" title="kyuubi_architecture_0_X">
+
+<h4 id="优点-1"><a href="#优点-1" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>支持多租户</li>
+<li>支持代理用户（hive.server2.proxy.user）</li>
+<li>支持 Session 级别配置</li>
+<li>Executors 资源隔离</li>
+<li>支持高可用</li>
+</ul>
+<h4 id="缺点-1"><a href="#缺点-1" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>只支持 Yarn-Client 模式，共用 Driver 进程，可能成为服务瓶颈</li>
+<li>高可用模式存在缺陷</li>
+</ul>
+<h3 id="Kyuubi-1-3-0"><a href="#Kyuubi-1-3-0" class="headerlink" title="Kyuubi 1.3.0"></a>Kyuubi 1.3.0</h3><p>Kyuubi 1.X 版本中，将 Kyuubi Server 和 SparkContext 进行解耦。引入 Spark SQL Engine 进行 SparkContext 初始化和 SQL 执行，在 Kyuubi Server 中通过 spark-submit 命令启动，启动后将自身状态保持在 Zookeeper 中。Kyuubi Server 接收到请求后通过 Zookeeper 寻找可用引擎或启动新引擎进行处理。</p>
+<p>Spark SQL Engine 作为独立的 Spark 应用，可以以不同的方式执行，并支持 yarn-cluster 模式。状态持续在 Zookeeper 中，使得 Kyuubi Server 之间可以共用 Engine，提高了 Kyuubi Server 的扩展能力。</p>
+<img src="/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/kyuubi_architecture_new.png" class="" title="kyuubi_architecture_new">
+
+<h4 id="优点-2"><a href="#优点-2" class="headerlink" title="优点"></a>优点</h4><ul>
+<li>支持多租户</li>
+<li>支持资源隔离</li>
+<li>支持不同级别的引擎共享策略（CONNECTION, USER, SERVER）</li>
+<li>支持高可用</li>
+</ul>
+<h4 id="缺点-2"><a href="#缺点-2" class="headerlink" title="缺点"></a>缺点</h4><ul>
+<li>多一层服务，加大了服务的复杂性</li>
+<li>增加依赖 Zookeeper，作为服务端和引擎端的服务发现</li>
+</ul>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a target="_blank" rel="noopener" href="http://spark.apache.org/docs/latest/sql-distributed-sql-engine.html">Distributed SQL Engine</a></li>
+<li><a target="_blank" rel="noopener" href="https://kyuubi.readthedocs.io/en/latest/overview/kyuubi_vs_thriftserver.html">Kyuubi v.s. Spark Thrift JDBC&#x2F;ODBC Server (STS)</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/NetEase/kyuubi/blob/branch-0.7/docs/architecture.md">Kyuubi 0.7.0 Architecture</a></li>
+<li><a target="_blank" rel="noopener" href="https://kyuubi.readthedocs.io/en/latest/overview/architecture.html">Kyuubi 1.X Architecture</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Kyuubi/" rel="tag"># Kyuubi</a>
+          
+            <a href="/tags/Spark/" rel="tag"># Spark</a>
+          
+            <a href="/tags/Spark-Thrift-Server/" rel="tag"># Spark Thrift Server</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/06/10/Spark-%E8%B7%A8%E9%9B%86%E7%BE%A4%E8%AF%BB%E5%86%99-Iceberg/" rel="next" title="Spark 跨集群读写 Iceberg">
+                <i class="fa fa-chevron-left"></i> Spark 跨集群读写 Iceberg
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/07/28/Spark-Yarn-ApplicationMaster-%E8%B6%85%E6%97%B6%E9%80%80%E5%87%BA/" rel="prev" title="Spark Yarn ApplicationMaster 超时退出">
+                Spark Yarn ApplicationMaster 超时退出 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-Thrift-Server"><span class="nav-number">2.</span> <span class="nav-text">Spark Thrift Server</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Spark-Thrift-Server-%E6%9E%B6%E6%9E%84"><span class="nav-number">2.1.</span> <span class="nav-text">Spark Thrift Server 架构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E7%82%B9"><span class="nav-number">2.2.</span> <span class="nav-text">优点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%BA%E7%82%B9"><span class="nav-number">2.3.</span> <span class="nav-text">缺点</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kyuubi-0-7-0"><span class="nav-number">3.</span> <span class="nav-text">Kyuubi 0.7.0</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Kyuubi-0-7-0-%E6%9E%B6%E6%9E%84"><span class="nav-number">3.1.</span> <span class="nav-text">Kyuubi 0.7.0 架构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Kyuubi-0-7-0-%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="nav-number">3.2.</span> <span class="nav-text">Kyuubi 0.7.0 高可用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E7%82%B9-1"><span class="nav-number">3.3.</span> <span class="nav-text">优点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%BA%E7%82%B9-1"><span class="nav-number">3.4.</span> <span class="nav-text">缺点</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kyuubi-1-3-0"><span class="nav-number">4.</span> <span class="nav-text">Kyuubi 1.3.0</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E7%82%B9-2"><span class="nav-number">4.1.</span> <span class="nav-text">优点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%BA%E7%82%B9-2"><span class="nav-number">4.2.</span> <span class="nav-text">缺点</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

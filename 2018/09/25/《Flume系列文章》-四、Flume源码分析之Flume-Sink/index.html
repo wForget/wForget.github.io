@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Flume," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="SinkRunnerSinkRunner是Sink组件启动的入口，start方法里面可以看到启动了一个线程执行PollingRunner Runnable对象，PollingRunner的实现跟上篇PollableSourceRunner里面PollingRunner的实现一样，循环调用SinkProcessor的proces方法。 SinkProcessorSink部分有一个SinkGroup的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《Flume系列文章》 四、Flume源码分析之Flume-Sink">
+<meta property="og:url" content="https://wforget.github.io/2018/09/25/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E5%9B%9B%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Sink/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="SinkRunnerSinkRunner是Sink组件启动的入口，start方法里面可以看到启动了一个线程执行PollingRunner Runnable对象，PollingRunner的实现跟上篇PollableSourceRunner里面PollingRunner的实现一样，循环调用SinkProcessor的proces方法。 SinkProcessorSink部分有一个SinkGroup的">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-09-25T02:19:53.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.818Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Flume">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2018/09/25/《Flume系列文章》-四、Flume源码分析之Flume-Sink/"/>
+
+
+
+
+
+  <title>《Flume系列文章》 四、Flume源码分析之Flume-Sink | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/09/25/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E5%9B%9B%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Sink/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">《Flume系列文章》 四、Flume源码分析之Flume-Sink</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-25T10:19:53+08:00">
+                2018-09-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="SinkRunner"><a href="#SinkRunner" class="headerlink" title="SinkRunner"></a>SinkRunner</h2><p>SinkRunner是Sink组件启动的入口，start方法里面可以看到启动了一个线程执行PollingRunner Runnable对象，PollingRunner的实现跟上篇PollableSourceRunner里面PollingRunner的实现一样，循环调用SinkProcessor的proces方法。</p>
+<h2 id="SinkProcessor"><a href="#SinkProcessor" class="headerlink" title="SinkProcessor"></a>SinkProcessor</h2><p>Sink部分有一个SinkGroup的概念，将一些Sink放在一个SinkGroup里面并指定一个SinkProcessor，可以实现多个Sink的故障转移（failover）或负载均衡（load_balance）等。<br>SinkProcessor有三个实现类：DefaultSinkProcessor、FailoverSinkProcessor、LoadBalancingSinkProcessor。</p>
+<blockquote>
+<p>DefaultSinkProcessor</p>
+</blockquote>
+<p>在没有指定SinkGroup的时候会对每个Sink启动一个SinkRunner并指定为DefaultSinkProcessor。DefaultSinkProcessor只会接收一个Sink，在process方法里面也只是调用了Sink的process方法。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public Status process() throws EventDeliveryException &#123;</span><br><span class="line">  return sink.process();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">@Override</span><br><span class="line">public void setSinks(List&lt;Sink&gt; sinks) &#123;	//AbstractConfigurationProvider的loadSinkGroups方法加载配置的时候进行设置</span><br><span class="line">  Preconditions.checkNotNull(sinks);</span><br><span class="line">  Preconditions.checkArgument(sinks.size() == 1, &quot;DefaultSinkPolicy can &quot;</span><br><span class="line">      + &quot;only handle one sink, &quot;</span><br><span class="line">      + &quot;try using a policy that supports multiple sinks&quot;);</span><br><span class="line">  sink = sinks.get(0);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>FailoverSinkProcessor</p>
+</blockquote>
+<p>SinkGroup的processor.type设置为failover时，对SinkGroup里面的Sink实行故障转移。FailoverSinkProcessor将有效的Sink存在通过优先级进行排序TreeMap结构的liveSinks中，将失效的Sink存在优先级队列failedSinks中。首先在TreeMap中获取第一个有效的Sink，循环执行process方法，当出现异常时，将这个Sink从TreeMap中移除并放入到失效的队列中，再从TreeMap中获取下一个有效的Sink继续执行process方法，当没有有效的Sink时，会对failedSinks中的sink进行刷新。下面看一下FailoverSinkProcessor的实现。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">  public void configure(Context context) &#123;  //配置</span><br><span class="line">    liveSinks = new TreeMap&lt;Integer, Sink&gt;(); //使用TreeMap存储有序的Sinks，通过优先级进行排序。</span><br><span class="line">    failedSinks = new PriorityQueue&lt;FailedSink&gt;();  //优先级队列来存放失败的Sink</span><br><span class="line">    Integer nextPrio = 0;</span><br><span class="line">    String maxPenaltyStr = context.getString(MAX_PENALTY_PREFIX);</span><br><span class="line">    if (maxPenaltyStr == null) &#123;</span><br><span class="line">      maxPenalty = DEFAULT_MAX_PENALTY;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">      try &#123;</span><br><span class="line">        maxPenalty = Integer.parseInt(maxPenaltyStr);</span><br><span class="line">      &#125; catch (NumberFormatException e) &#123;</span><br><span class="line">        logger.warn(&quot;&#123;&#125; is not a valid value for &#123;&#125;&quot;,</span><br><span class="line">                    new Object[] &#123; maxPenaltyStr, MAX_PENALTY_PREFIX &#125;);</span><br><span class="line">        maxPenalty = DEFAULT_MAX_PENALTY;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    for (Entry&lt;String, Sink&gt; entry : sinks.entrySet()) &#123;</span><br><span class="line">      String priStr = PRIORITY_PREFIX + entry.getKey();</span><br><span class="line">      Integer priority; //优先级，用来对Sink进行排序，优先级高的将较早的激活</span><br><span class="line">      try &#123;</span><br><span class="line">        priority =  Integer.parseInt(context.getString(priStr));</span><br><span class="line">      &#125; catch (Exception e) &#123;</span><br><span class="line">        priority = --nextPrio;  //没有配置优先级的话，根据加载的顺序，从0递减</span><br><span class="line">      &#125;</span><br><span class="line">      if (!liveSinks.containsKey(priority)) &#123;</span><br><span class="line">        liveSinks.put(priority, sinks.get(entry.getKey()));</span><br><span class="line">      &#125; else &#123;</span><br><span class="line">        logger.warn(&quot;Sink &#123;&#125; not added to FailverSinkProcessor as priority&quot; +</span><br><span class="line">            &quot;duplicates that of sink &#123;&#125;&quot;, entry.getKey(),</span><br><span class="line">            liveSinks.get(priority));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    activeSink = liveSinks.get(liveSinks.lastKey());  //获取优先级最高的Sink，作为active sink</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public Status process() throws EventDeliveryException &#123;</span><br><span class="line">    // Retry any failed sinks that have gone through their &quot;cooldown&quot; period</span><br><span class="line">    Long now = System.currentTimeMillis();</span><br><span class="line">    //刷新失败的sinks</span><br><span class="line">    //failedSinks不为空，并且failedSinks的头部的Sink的刷新时间小于当前时间，开始刷新失败的Sink</span><br><span class="line">    while (!failedSinks.isEmpty() &amp;&amp; failedSinks.peek().getRefresh() &lt; now) &#123;</span><br><span class="line">      FailedSink cur = failedSinks.poll();  //取出头部的Sink</span><br><span class="line">      Status s;</span><br><span class="line">      try &#123;</span><br><span class="line">        s = cur.getSink().process();    //执行失败sink的process方法</span><br><span class="line">        if (s  == Status.READY) &#123;   //判断执行状态，如果成功执行，将sink放入liveSinks里面，并重新在liveSinks里面获取一个sink作为activeSink</span><br><span class="line">          liveSinks.put(cur.getPriority(), cur.getSink());</span><br><span class="line">          activeSink = liveSinks.get(liveSinks.lastKey());</span><br><span class="line">          logger.debug(&quot;Sink &#123;&#125; was recovered from the fail list&quot;,</span><br><span class="line">                  cur.getSink().getName());</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">          // if it&#x27;s a backoff it needn&#x27;t be penalized.</span><br><span class="line">          failedSinks.add(cur);</span><br><span class="line">        &#125;</span><br><span class="line">        return s;</span><br><span class="line">      &#125; catch (Exception e) &#123; //执行出现异常时，将sink失败次数加一，并放回失败队列中</span><br><span class="line">        cur.incFails();</span><br><span class="line">        failedSinks.add(cur);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Status ret = null;</span><br><span class="line">    while (activeSink != null) &#123;  //当activeSink不为空的时候循环执行sink的process方法</span><br><span class="line">      try &#123;</span><br><span class="line">        ret = activeSink.process();</span><br><span class="line">        return ret;</span><br><span class="line">      &#125; catch (Exception e) &#123;</span><br><span class="line">        logger.warn(&quot;Sink &#123;&#125; failed and has been sent to failover list&quot;,</span><br><span class="line">                activeSink.getName(), e);</span><br><span class="line">        //出现异常的时候移除当前的sink并获取下一个有效的sink。当没有有效的sink的时候会跳出循环，下次进到方法的时候就会执行上面刷新失败的sinks</span><br><span class="line">        activeSink = moveActiveToDeadAndGetNext();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    throw new EventDeliveryException(&quot;All sinks failed to process, &quot; +</span><br><span class="line">        &quot;nothing left to failover to&quot;);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>LoadBalancingSinkProcessor</p>
+</blockquote>
+<p>SinkGroup的processor.type设置为load_balance时，对SinkGroup里面的Sink实行负载均衡。负载均衡的实现是通过实现SinkSelector对象的createSinkIterator方法，生成Sinks排序不同的的Iterator，已经实现了循环（round_robin）和随机（random）两种方式，也可以通过继承AbstractSinkSelector类自己进行实现。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public Status process() throws EventDeliveryException &#123;</span><br><span class="line">  Status status = null;</span><br><span class="line"></span><br><span class="line">  Iterator&lt;Sink&gt; sinkIterator = selector.createSinkIterator();	//这里不同的负载均衡方法，sinkIterator中sink的顺序不同</span><br><span class="line">  while (sinkIterator.hasNext()) &#123;</span><br><span class="line">    Sink sink = sinkIterator.next();</span><br><span class="line">    try &#123;</span><br><span class="line">      status = sink.process();</span><br><span class="line">      break;</span><br><span class="line">    &#125; catch (Exception ex) &#123;</span><br><span class="line">      selector.informSinkFailed(sink);</span><br><span class="line">      LOGGER.warn(&quot;Sink failed to consume event. &quot;</span><br><span class="line">          + &quot;Attempting next sink if available.&quot;, ex);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  if (status == null) &#123;</span><br><span class="line">    throw new EventDeliveryException(&quot;All configured sinks have failed&quot;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  return status;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Sink"><a href="#Sink" class="headerlink" title="Sink"></a>Sink</h2><p>Sink的实现就不做具体的分析了，可以通过继承AbstractSink类，编写自定义的Sink，Sink的process方法中对Channel数据进行读取需要开启事务操作。下面是HiveSink的Process方法实现。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">public Status process() throws EventDeliveryException &#123;</span><br><span class="line">  // writers used in this Txn</span><br><span class="line"></span><br><span class="line">  Channel channel = getChannel();</span><br><span class="line">  Transaction transaction = channel.getTransaction();		//获取事务</span><br><span class="line">  transaction.begin();	//开启事务</span><br><span class="line">  boolean success = false;</span><br><span class="line">  try &#123;</span><br><span class="line">    // 1 Enable Heart Beats</span><br><span class="line">    if (timeToSendHeartBeat.compareAndSet(true, false)) &#123;</span><br><span class="line">      enableHeartBeatOnAllWriters();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 2 Drain Batch</span><br><span class="line">    int txnEventCount = drainOneBatch(channel);	//批量处理数据</span><br><span class="line">    transaction.commit();	//提交事务</span><br><span class="line">    success = true;</span><br><span class="line"></span><br><span class="line">    // 3 Update Counters</span><br><span class="line">    if (txnEventCount &lt; 1) &#123;</span><br><span class="line">      return Status.BACKOFF;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">      return Status.READY;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; catch (InterruptedException err) &#123;</span><br><span class="line">    LOG.warn(getName() + &quot;: Thread was interrupted.&quot;, err);</span><br><span class="line">    return Status.BACKOFF;</span><br><span class="line">  &#125; catch (Exception e) &#123;</span><br><span class="line">    throw new EventDeliveryException(e);</span><br><span class="line">  &#125; finally &#123;</span><br><span class="line">    if (!success) &#123;</span><br><span class="line">      transaction.rollback();	//事务回滚</span><br><span class="line">    &#125;</span><br><span class="line">    transaction.close();	//关闭事务</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Flume/" rel="tag"># Flume</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/09/12/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%B8%89%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Source/" rel="next" title="《Flume系列文章》 三、Flume源码分析之Flume Source">
+                <i class="fa fa-chevron-left"></i> 《Flume系列文章》 三、Flume源码分析之Flume Source
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/09/25/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%BA%94%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Channel/" rel="prev" title="《Flume系列文章》 五、Flume源码分析之Flume-Channel">
+                《Flume系列文章》 五、Flume源码分析之Flume-Channel <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#SinkRunner"><span class="nav-number">1.</span> <span class="nav-text">SinkRunner</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SinkProcessor"><span class="nav-number">2.</span> <span class="nav-text">SinkProcessor</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sink"><span class="nav-number">3.</span> <span class="nav-text">Sink</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

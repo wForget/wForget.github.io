@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Flume," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Flume Node源码分析类Application.java(org.apache.flume.node.Application)为Flume Node的主入口，从这个开始进行代码分析。本分分析的代码在Flume源码包中flume-ng-node、flume-ng-core两个模块中。 读取配置文件配置文件的读取是通过调用AbstractConfigurationProvider类的getCon">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《Flume系列文章》 二、Flume源码分析之Flume Node">
+<meta property="og:url" content="https://wforget.github.io/2018/09/10/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%BA%8C%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Node/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="Flume Node源码分析类Application.java(org.apache.flume.node.Application)为Flume Node的主入口，从这个开始进行代码分析。本分分析的代码在Flume源码包中flume-ng-node、flume-ng-core两个模块中。 读取配置文件配置文件的读取是通过调用AbstractConfigurationProvider类的getCon">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-09-10T06:12:30.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.816Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Flume">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2018/09/10/《Flume系列文章》-二、Flume源码分析之Flume-Node/"/>
+
+
+
+
+
+  <title>《Flume系列文章》 二、Flume源码分析之Flume Node | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/09/10/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%BA%8C%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Node/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">《Flume系列文章》 二、Flume源码分析之Flume Node</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-10T14:12:30+08:00">
+                2018-09-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Flume-Node源码分析"><a href="#Flume-Node源码分析" class="headerlink" title="Flume Node源码分析"></a>Flume Node源码分析</h2><p>类Application.java(org.apache.flume.node.Application)为Flume Node的主入口，从这个开始进行代码分析。本分分析的代码在Flume源码包中flume-ng-node、flume-ng-core两个模块中。</p>
+<h2 id="读取配置文件"><a href="#读取配置文件" class="headerlink" title="读取配置文件"></a>读取配置文件</h2><p>配置文件的读取是通过调用AbstractConfigurationProvider类的getConfiguration()方法。AbstractConfigurationProvider的子类通过实现getFlumeConfiguration()方法可以从不同的地方获取配置，参数”z”&#x2F;“zkConnString”是来指定zookeeper地址。没有配置zookeeper地址的话就直接读取”f”&#x2F;“conf-file”指定的配置文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">public MaterializedConfiguration getConfiguration() &#123;</span><br><span class="line">  MaterializedConfiguration conf = new SimpleMaterializedConfiguration();</span><br><span class="line">  //子类通过实现getFlumeConfiguration方法，从不同的地方获取配置数据（zookeeper、memory、file等）</span><br><span class="line">  FlumeConfiguration fconfig = getFlumeConfiguration();</span><br><span class="line">  AgentConfiguration agentConf = fconfig.getConfigurationFor(getAgentName());</span><br><span class="line">  if (agentConf != null) &#123;</span><br><span class="line">    Map&lt;String, ChannelComponent&gt; channelComponentMap = Maps.newHashMap();</span><br><span class="line">    Map&lt;String, SourceRunner&gt; sourceRunnerMap = Maps.newHashMap();</span><br><span class="line">    Map&lt;String, SinkRunner&gt; sinkRunnerMap = Maps.newHashMap();</span><br><span class="line">    try &#123;</span><br><span class="line">      loadChannels(agentConf, channelComponentMap);   //加载chanels配置</span><br><span class="line">      loadSources(agentConf, channelComponentMap, sourceRunnerMap);   //加载sources配置</span><br><span class="line">      loadSinks(agentConf, channelComponentMap, sinkRunnerMap);   //加载sinks配置</span><br><span class="line">      Set&lt;String&gt; channelNames = new HashSet&lt;String&gt;(channelComponentMap.keySet());</span><br><span class="line">      for (String channelName : channelNames) &#123;</span><br><span class="line">        ChannelComponent channelComponent = channelComponentMap.get(channelName);</span><br><span class="line">        if (channelComponent.components.isEmpty()) &#123;</span><br><span class="line">          LOGGER.warn(String.format(&quot;Channel %s has no components connected&quot; +</span><br><span class="line">              &quot; and has been removed.&quot;, channelName));</span><br><span class="line">          channelComponentMap.remove(channelName);</span><br><span class="line">          Map&lt;String, Channel&gt; nameChannelMap =</span><br><span class="line">              channelCache.get(channelComponent.channel.getClass());</span><br><span class="line">          if (nameChannelMap != null) &#123;</span><br><span class="line">            nameChannelMap.remove(channelName);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">          LOGGER.info(String.format(&quot;Channel %s connected to %s&quot;,</span><br><span class="line">              channelName, channelComponent.components.toString()));</span><br><span class="line">          conf.addChannel(channelName, channelComponent.channel);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      for (Map.Entry&lt;String, SourceRunner&gt; entry : sourceRunnerMap.entrySet()) &#123;</span><br><span class="line">        conf.addSourceRunner(entry.getKey(), entry.getValue());</span><br><span class="line">      &#125;</span><br><span class="line">      for (Map.Entry&lt;String, SinkRunner&gt; entry : sinkRunnerMap.entrySet()) &#123;</span><br><span class="line">        conf.addSinkRunner(entry.getKey(), entry.getValue());</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; catch (InstantiationException ex) &#123;</span><br><span class="line">      LOGGER.error(&quot;Failed to instantiate component&quot;, ex);</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">      channelComponentMap.clear();</span><br><span class="line">      sourceRunnerMap.clear();</span><br><span class="line">      sinkRunnerMap.clear();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; else &#123;</span><br><span class="line">    LOGGER.warn(&quot;No configuration found for this host:&#123;&#125;&quot;, getAgentName());</span><br><span class="line">  &#125;</span><br><span class="line">  return conf;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>启动是有个参数”no-reload-conf”，是指定是否需要在修改配置文件后，重启Flume Node。对于文件方式的配置方式，指定需要在修改配置文件后重启Flume，就是启动了一个监控文件的线程，执行了如下操作，对配置文件的修改时间进行监控。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">public class FileWatcherRunnable implements Runnable &#123;</span><br><span class="line"></span><br><span class="line">  private final File file;</span><br><span class="line">  private final CounterGroup counterGroup;</span><br><span class="line"></span><br><span class="line">  private long lastChange;</span><br><span class="line"></span><br><span class="line">  public FileWatcherRunnable(File file, CounterGroup counterGroup) &#123;</span><br><span class="line">    super();</span><br><span class="line">    this.file = file;</span><br><span class="line">    this.counterGroup = counterGroup;</span><br><span class="line">    this.lastChange = 0L;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public void run() &#123;</span><br><span class="line">    LOGGER.debug(&quot;Checking file:&#123;&#125; for changes&quot;, file);</span><br><span class="line"></span><br><span class="line">    counterGroup.incrementAndGet(&quot;file.checks&quot;);</span><br><span class="line"></span><br><span class="line">    long lastModified = file.lastModified();</span><br><span class="line"></span><br><span class="line">    if (lastModified &gt; lastChange) &#123;</span><br><span class="line">      LOGGER.info(&quot;Reloading configuration file:&#123;&#125;&quot;, file);</span><br><span class="line"></span><br><span class="line">      counterGroup.incrementAndGet(&quot;file.loads&quot;);</span><br><span class="line"></span><br><span class="line">      lastChange = lastModified;</span><br><span class="line"></span><br><span class="line">      try &#123;</span><br><span class="line">        eventBus.post(getConfiguration());</span><br><span class="line">      &#125; catch (Exception e) &#123;</span><br><span class="line">        LOGGER.error(&quot;Failed to load configuration data. Exception follows.&quot;,</span><br><span class="line">            e);</span><br><span class="line">      &#125; catch (NoClassDefFoundError e) &#123;</span><br><span class="line">        LOGGER.error(&quot;Failed to start agent because dependencies were not &quot; +</span><br><span class="line">            &quot;found in classpath. Error follows.&quot;, e);</span><br><span class="line">      &#125; catch (Throwable t) &#123;</span><br><span class="line">        // caught because the caller does not handle or log Throwables</span><br><span class="line">        LOGGER.error(&quot;Unhandled error&quot;, t);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="启动组件"><a href="#启动组件" class="headerlink" title="启动组件"></a>启动组件</h2><p>加载配置后，会调用start()或者startAllComponents()方法启动所有的组件。在这两个方法中可以看到，组件是通过调用LifecycleSupervisor对象的supervise()方法进行启动的。在supervise()方法中，是执行了MonitorRunnable对象，代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br></pre></td><td class="code"><pre><span class="line">public static class MonitorRunnable implements Runnable &#123;</span><br><span class="line"></span><br><span class="line">  public ScheduledExecutorService monitorService;</span><br><span class="line">  public LifecycleAware lifecycleAware;   //Flume组件（SourceRunner、Channel、SinkRunner）</span><br><span class="line">  public Supervisoree supervisoree;       //管理组件状态，status属性记录组件的状态，policy属性是指定组件的运行方式（总是重启和只执行一次）</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public void run() &#123;</span><br><span class="line">    logger.debug(&quot;checking process:&#123;&#125; supervisoree:&#123;&#125;&quot;, lifecycleAware,</span><br><span class="line">        supervisoree);</span><br><span class="line"></span><br><span class="line">    long now = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">    try &#123;</span><br><span class="line">      if (supervisoree.status.firstSeen == null) &#123;</span><br><span class="line">        logger.debug(&quot;first time seeing &#123;&#125;&quot;, lifecycleAware);</span><br><span class="line"></span><br><span class="line">        supervisoree.status.firstSeen = now;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      supervisoree.status.lastSeen = now;</span><br><span class="line">      synchronized (lifecycleAware) &#123;</span><br><span class="line">        if (supervisoree.status.discard) &#123;</span><br><span class="line">          // Unsupervise has already been called on this.</span><br><span class="line">          logger.info(&quot;Component has already been stopped &#123;&#125;&quot;, lifecycleAware);</span><br><span class="line">          return;</span><br><span class="line">        &#125; else if (supervisoree.status.error) &#123;</span><br><span class="line">          logger.info(&quot;Component &#123;&#125; is in error state, and Flume will not&quot;</span><br><span class="line">              + &quot;attempt to change its state&quot;, lifecycleAware);</span><br><span class="line">          return;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        supervisoree.status.lastSeenState = lifecycleAware.getLifecycleState();</span><br><span class="line"></span><br><span class="line">        if (!lifecycleAware.getLifecycleState().equals(</span><br><span class="line">            supervisoree.status.desiredState)) &#123;</span><br><span class="line"></span><br><span class="line">          logger.debug(&quot;Want to transition &#123;&#125; from &#123;&#125; to &#123;&#125; (failures:&#123;&#125;)&quot;,</span><br><span class="line">              new Object[] &#123; lifecycleAware, supervisoree.status.lastSeenState,</span><br><span class="line">                  supervisoree.status.desiredState,</span><br><span class="line">                  supervisoree.status.failures &#125;);</span><br><span class="line"></span><br><span class="line">          switch (supervisoree.status.desiredState) &#123;</span><br><span class="line">            case START:</span><br><span class="line">              try &#123;</span><br><span class="line">                lifecycleAware.start();</span><br><span class="line">              &#125; catch (Throwable e) &#123;</span><br><span class="line">                logger.error(&quot;Unable to start &quot; + lifecycleAware</span><br><span class="line">                    + &quot; - Exception follows.&quot;, e);</span><br><span class="line">                if (e instanceof Error) &#123;</span><br><span class="line">                  // This component can never recover, shut it down.</span><br><span class="line">                  supervisoree.status.desiredState = LifecycleState.STOP;</span><br><span class="line">                  try &#123;</span><br><span class="line">                    lifecycleAware.stop();</span><br><span class="line">                    logger.warn(&quot;Component &#123;&#125; stopped, since it could not be&quot;</span><br><span class="line">                        + &quot;successfully started due to missing dependencies&quot;,</span><br><span class="line">                        lifecycleAware);</span><br><span class="line">                  &#125; catch (Throwable e1) &#123;</span><br><span class="line">                    logger.error(&quot;Unsuccessful attempt to &quot;</span><br><span class="line">                        + &quot;shutdown component: &#123;&#125; due to missing dependencies.&quot;</span><br><span class="line">                        + &quot; Please shutdown the agent&quot;</span><br><span class="line">                        + &quot;or disable this component, or the agent will be&quot;</span><br><span class="line">                        + &quot;in an undefined state.&quot;, e1);</span><br><span class="line">                    supervisoree.status.error = true;</span><br><span class="line">                    if (e1 instanceof Error) &#123;</span><br><span class="line">                      throw (Error) e1;</span><br><span class="line">                    &#125;</span><br><span class="line">                    // Set the state to stop, so that the conf poller can</span><br><span class="line">                    // proceed.</span><br><span class="line">                  &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                supervisoree.status.failures++;</span><br><span class="line">              &#125;</span><br><span class="line">              break;</span><br><span class="line">            case STOP:</span><br><span class="line">              try &#123;</span><br><span class="line">                lifecycleAware.stop();</span><br><span class="line">              &#125; catch (Throwable e) &#123;</span><br><span class="line">                logger.error(&quot;Unable to stop &quot; + lifecycleAware</span><br><span class="line">                    + &quot; - Exception follows.&quot;, e);</span><br><span class="line">                if (e instanceof Error) &#123;</span><br><span class="line">                  throw (Error) e;</span><br><span class="line">                &#125;</span><br><span class="line">                supervisoree.status.failures++;</span><br><span class="line">              &#125;</span><br><span class="line">              break;</span><br><span class="line">            default:</span><br><span class="line">              logger.warn(&quot;I refuse to acknowledge &#123;&#125; as a desired state&quot;,</span><br><span class="line">                  supervisoree.status.desiredState);</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">          if (!supervisoree.policy.isValid(lifecycleAware, supervisoree.status)) &#123;</span><br><span class="line">            logger.error(</span><br><span class="line">                &quot;Policy &#123;&#125; of &#123;&#125; has been violated - supervisor should exit!&quot;,</span><br><span class="line">                supervisoree.policy, lifecycleAware);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; catch (Throwable t) &#123;</span><br><span class="line">      logger.error(&quot;Unexpected error&quot;, t);</span><br><span class="line">    &#125;</span><br><span class="line">    logger.debug(&quot;Status check complete&quot;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Flume/" rel="tag"># Flume</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/09/10/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%B8%80%E3%80%81Flume%E7%9A%84%E4%BD%BF%E7%94%A8/" rel="next" title="《Flume系列文章》 一、Flume的使用">
+                <i class="fa fa-chevron-left"></i> 《Flume系列文章》 一、Flume的使用
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/09/12/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%B8%89%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Source/" rel="prev" title="《Flume系列文章》 三、Flume源码分析之Flume Source">
+                《Flume系列文章》 三、Flume源码分析之Flume Source <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Flume-Node%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text">Flume Node源码分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">2.</span> <span class="nav-text">读取配置文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E7%BB%84%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">启动组件</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

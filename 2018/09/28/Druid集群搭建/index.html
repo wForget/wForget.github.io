@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Druid," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="下载解压安装包下载Druid包，解压到安装目录： 1wget http:&#x2F;&#x2F;static.druid.io&#x2F;artifacts&#x2F;releases&#x2F;druid-0.12.3-bin.tar.gz  下载MySQL metadata store extension，并解压到extensions目录中： 1wget http:&#x2F;&#x2F;static.druid.io&#x2F;artifacts&#x2F;releases&#x2F;my">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Druid集群搭建">
+<meta property="og:url" content="https://wforget.github.io/2018/09/28/Druid%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="下载解压安装包下载Druid包，解压到安装目录： 1wget http:&#x2F;&#x2F;static.druid.io&#x2F;artifacts&#x2F;releases&#x2F;druid-0.12.3-bin.tar.gz  下载MySQL metadata store extension，并解压到extensions目录中： 1wget http:&#x2F;&#x2F;static.druid.io&#x2F;artifacts&#x2F;releases&#x2F;my">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-09-28T02:59:58.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.757Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Druid">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2018/09/28/Druid集群搭建/"/>
+
+
+
+
+
+  <title>Druid集群搭建 | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/09/28/Druid%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Druid集群搭建</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-28T10:59:58+08:00">
+                2018-09-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="下载解压安装包"><a href="#下载解压安装包" class="headerlink" title="下载解压安装包"></a>下载解压安装包</h2><p>下载Druid包，解压到安装目录：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://static.druid.io/artifacts/releases/druid-0.12.3-bin.tar.gz</span><br></pre></td></tr></table></figure>
+
+<p>下载MySQL metadata store extension，并解压到extensions目录中：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget http://static.druid.io/artifacts/releases/mysql-metadata-storage-0.12.3.tar.gz</span><br></pre></td></tr></table></figure>
+
+<p>手动创建 druid-0.12.3&#x2F;var&#x2F;tmp 和 druid-0.12.3&#x2F;var&#x2F;hadoop-tmp 目录</p>
+<h2 id="创建Metadata-storage和Deep-storage"><a href="#创建Metadata-storage和Deep-storage" class="headerlink" title="创建Metadata storage和Deep storage"></a>创建Metadata storage和Deep storage</h2><blockquote>
+<p>Metadata storage</p>
+</blockquote>
+<p>我使用的是MySql数据库作为元数据库，在MySql中创建一个Druid用户和Druid数据库，并给Druid用户配置Druid数据库的所有权限。</p>
+<blockquote>
+<p>Deep storage</p>
+</blockquote>
+<p>我使用HDFS作为Druid的Deep storage，在hdfs创建&#x2F;druid目录，相关命令如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo su hdfs</span><br><span class="line">hadoop fs -mkdir -p /druid</span><br><span class="line">hadoop fs -chown hadoop:supergroup /druid	#将目录授权给hadoop</span><br></pre></td></tr></table></figure>
+
+<h2 id="集群分配"><a href="#集群分配" class="headerlink" title="集群分配"></a>集群分配</h2><p>线上集群一共10台机器，启动8个数据节点、2个Master节点、2个查询节点。<br>数据节点：包括 Historical 和 MiddleManager 进程。<br>Master节点：包括 Coordinator 和 Overlord 进程。<br>查询节点：包括 Broker 和 Router(可选) 进程。</p>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>创建druid-0.12.3&#x2F;conf-online目录，将conf&#x2F;中的配置复制到conf-online&#x2F;中，在进行修改，具体配置如下：</p>
+<h3 id="Common配置"><a href="#Common配置" class="headerlink" title="Common配置"></a>Common配置</h3><p>配置文件：conf-online&#x2F;druid&#x2F;_common&#x2F;common.runtime.properties</p>
+<blockquote>
+<p>复制hadoop配置文件</p>
+</blockquote>
+<p>将Hadoop configuration XMLs(core-site.xml, hdfs-site.xml, yarn-site.xml, mapred-site.xml)复制到conf-online&#x2F;druid&#x2F;_common中。</p>
+<blockquote>
+<p>配置 Zookeeper</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Zookeeper</span><br><span class="line">#</span><br><span class="line"></span><br><span class="line">druid.zk.service.host=host01:2181,host02:2181,host03:2181</span><br><span class="line">druid.zk.paths.base=/druid</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>添加 extensions (“druid-kafka-indexing-service” “mysql-metadata-storage” “druid-hdfs-storage”)</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">druid.extensions.loadList=[&quot;druid-kafka-eight&quot;, &quot;druid-histogram&quot;, &quot;druid-datasketches&quot;, &quot;druid-lookups-cached-global&quot;, &quot;mysql-metadata-storage&quot;, &quot;druid-kafka-indexing-service&quot;, &quot;druid-hdfs-storage&quot;]</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>配置 Metadata storage</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Metadata storage</span><br><span class="line">#</span><br><span class="line"></span><br><span class="line"># For MySQL:</span><br><span class="line">druid.metadata.storage.type=mysql</span><br><span class="line">druid.metadata.storage.connector.connectURI=jdbc:mysql://host01:3306/druid</span><br><span class="line">druid.metadata.storage.connector.user=druid</span><br><span class="line">druid.metadata.storage.connector.password=123456</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>配置 Deep storage</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Deep storage</span><br><span class="line">#</span><br><span class="line"></span><br><span class="line"># For HDFS (make sure to include the HDFS extension and that your Hadoop config files in the cp):</span><br><span class="line">druid.storage.type=hdfs</span><br><span class="line">druid.storage.storageDirectory=hdfs://nameservice1/druid/segments</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>配置 Indexing service logs</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Indexing service logs</span><br><span class="line">#</span><br><span class="line"></span><br><span class="line"># For HDFS (make sure to include the HDFS extension and that your Hadoop config files in the cp):</span><br><span class="line">druid.indexer.logs.type=hdfs</span><br><span class="line">druid.indexer.logs.directory=hdfs://nameservice1/druid/indexing-logs</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>设置 Monitoring 日志级别</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">#</span><br><span class="line"># Monitoring</span><br><span class="line">#</span><br><span class="line">druid.monitoring.monitors=[&quot;io.druid.java.util.metrics.JvmMonitor&quot;]</span><br><span class="line">druid.emitter=logging</span><br><span class="line">druid.emitter.logging.logLevel=info</span><br></pre></td></tr></table></figure>
+
+<h3 id="Coordinator配置"><a href="#Coordinator配置" class="headerlink" title="Coordinator配置"></a>Coordinator配置</h3><p>配置目录：conf-online&#x2F;druid&#x2F;coordinator</p>
+<blockquote>
+<p>jvm.config</p>
+</blockquote>
+<p>修改时区</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">-server</span><br><span class="line">-Xms3g</span><br><span class="line">-Xmx3g</span><br><span class="line">-Duser.timezone=UTC+0800</span><br><span class="line">-Dfile.encoding=UTF-8</span><br><span class="line">-Djava.io.tmpdir=var/tmp</span><br><span class="line">-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</span><br><span class="line">-Dderby.stream.error.file=var/druid/derby.log</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>runtime.properties</p>
+</blockquote>
+<p>修改host和port</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">druid.service=druid/coordinator</span><br><span class="line">druid.host=192.168.1.120</span><br><span class="line">druid.port=28081</span><br><span class="line"></span><br><span class="line">druid.coordinator.startDelay=PT30S</span><br><span class="line">druid.coordinator.period=PT30S</span><br></pre></td></tr></table></figure>
+
+<h3 id="Overlord配置"><a href="#Overlord配置" class="headerlink" title="Overlord配置"></a>Overlord配置</h3><p>配置目录：conf-online&#x2F;druid&#x2F;overlord</p>
+<blockquote>
+<p>jvm.config</p>
+</blockquote>
+<p>修改时区</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">-server</span><br><span class="line">-Xms3g</span><br><span class="line">-Xmx3g</span><br><span class="line">-Duser.timezone=UTC+0800</span><br><span class="line">-Dfile.encoding=UTF-8</span><br><span class="line">-Djava.io.tmpdir=var/tmp</span><br><span class="line">-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>runtime.properties</p>
+</blockquote>
+<p>修改host和port</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">druid.service=druid/overlord</span><br><span class="line">druid.host=192.168.1.120</span><br><span class="line">druid.port=28090</span><br><span class="line"></span><br><span class="line">druid.indexer.queue.startDelay=PT30S</span><br><span class="line"></span><br><span class="line">druid.indexer.runner.type=remote</span><br><span class="line">druid.indexer.storage.type=metadata</span><br></pre></td></tr></table></figure>
+
+<h3 id="Historical配置"><a href="#Historical配置" class="headerlink" title="Historical配置"></a>Historical配置</h3><p>配置目录：conf-online&#x2F;druid&#x2F;historical</p>
+<blockquote>
+<p>jvm.config</p>
+</blockquote>
+<p>修改时区和MaxDirectMemorySize</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">-server</span><br><span class="line">-Xms8g</span><br><span class="line">-Xmx8g</span><br><span class="line">-XX:MaxDirectMemorySize=20g</span><br><span class="line">-Duser.timezone=UTC+0800</span><br><span class="line">-Dfile.encoding=UTF-8</span><br><span class="line">-Djava.io.tmpdir=var/tmp</span><br><span class="line">-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>runtime.properties</p>
+</blockquote>
+<p>修改host和port<br>调整druid.server.http.numThreads和druid.processing.numThreads（建议cores-1）<br>注意：MaxDirectMemorySiz &gt;&#x3D; druid.processing.buffer.sizeBytes * (druid.processing.numMergeBuffers + druid.processing.numThreads + 1)<br>druid.segmentCache.locations是本地缓存segment的地方<br>配置historical的缓存</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">druid.service=druid/historical</span><br><span class="line">druid.host=192.168.1.120</span><br><span class="line">druid.port=28083</span><br><span class="line"></span><br><span class="line"># HTTP server threads</span><br><span class="line">druid.server.http.numThreads=25</span><br><span class="line"></span><br><span class="line"># Processing threads and buffers</span><br><span class="line">druid.processing.buffer.sizeBytes=1073741824</span><br><span class="line">druid.processing.numMergeBuffers=2</span><br><span class="line">druid.processing.numThreads=15</span><br><span class="line">druid.processing.tmpDir=var/druid/processing</span><br><span class="line"></span><br><span class="line"># Segment storage</span><br><span class="line">#druid.segmentCache.locations=[&#123;&quot;path&quot;:&quot;var/druid/segment-cache&quot;,&quot;maxSize&quot;\:130000000000&#125;]</span><br><span class="line">druid.segmentCache.locations=[&#123;&quot;path&quot;:&quot;/data01/druid/segment-cache&quot;,&quot;maxSize&quot;\:100000000000&#125;, &#123;&quot;path&quot;:&quot;/data02/druid/segment-cache&quot;,&quot;maxSize&quot;\:100000000000&#125;]</span><br><span class="line">druid.server.maxSize=200000000000</span><br><span class="line"></span><br><span class="line">druid.query.groupBy.maxOnDiskStorage=10737418240</span><br><span class="line"></span><br><span class="line"># Cache</span><br><span class="line">druid.historical.cache.useCache=true</span><br><span class="line">druid.historical.cache.populateCache=true</span><br><span class="line">druid.historical.cache.unCacheable=[&quot;select&quot;]</span><br><span class="line">druid.cache.type=caffeine</span><br><span class="line">druid.cache.sizeInBytes=6000000000</span><br></pre></td></tr></table></figure>
+
+<h3 id="MiddleManager配置"><a href="#MiddleManager配置" class="headerlink" title="MiddleManager配置"></a>MiddleManager配置</h3><p>配置目录：conf-online&#x2F;druid&#x2F;middleManager</p>
+<blockquote>
+<p>jvm.config</p>
+</blockquote>
+<p>修改时区</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">-server</span><br><span class="line">-Xms64m</span><br><span class="line">-Xmx64m</span><br><span class="line">-Duser.timezone=UTC+0800</span><br><span class="line">-Dfile.encoding=UTF-8</span><br><span class="line">-Dhadoop.hadoop.tmp.dir=var/hadoop-tmp</span><br><span class="line">-Djava.io.tmpdir=var/tmp</span><br><span class="line">-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>runtime.properties</p>
+</blockquote>
+<p>修改host和port<br>修改druid.indexer.runner.javaOpts，配置MaxDirectMemorySize<br>修改druid.indexer.fork.property.druid.processing相关配置<br>指定druid.indexer.task.defaultHadoopCoordinates，HadoopIndexTasks使用的Hadoop版本</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">druid.service=druid/middleManager</span><br><span class="line">druid.host=192.168.1.120</span><br><span class="line">druid.port=28091</span><br><span class="line"></span><br><span class="line"># Number of tasks per middleManager</span><br><span class="line">druid.worker.capacity=3</span><br><span class="line"></span><br><span class="line"># Task launch parameters</span><br><span class="line">druid.indexer.runner.javaOpts=-server -Xms2g -Xmx2g -XX:MaxDirectMemorySize=4g -Duser.timezone=UTC+0800 -Dfile.encoding=UTF-8 -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</span><br><span class="line">druid.indexer.task.baseTaskDir=var/druid/task</span><br><span class="line">druid.indexer.task.restoreTasksOnRestart=true</span><br><span class="line"></span><br><span class="line"># HTTP server threads</span><br><span class="line">druid.server.http.numThreads=25</span><br><span class="line"></span><br><span class="line"># Processing threads and buffers on Peons</span><br><span class="line">druid.indexer.fork.property.druid.processing.buffer.sizeBytes=536870912</span><br><span class="line">druid.indexer.fork.property.druid.processing.numMergeBuffers=2</span><br><span class="line">druid.indexer.fork.property.druid.processing.numThreads=2</span><br><span class="line">druid.indexer.fork.property.druid.processing.tmpDir=var/druid/processing</span><br><span class="line"></span><br><span class="line"># Hadoop indexing</span><br><span class="line">druid.indexer.task.hadoopWorkingPath=var/druid/hadoop-tmp</span><br><span class="line">druid.indexer.task.defaultHadoopCoordinates=[&quot;org.apache.hadoop:hadoop-client:2.6.0-mr1-cdh5.13.1&quot;]</span><br></pre></td></tr></table></figure>
+
+<h3 id="Broker配置"><a href="#Broker配置" class="headerlink" title="Broker配置"></a>Broker配置</h3><p>配置目录：conf-online&#x2F;druid&#x2F;broker</p>
+<blockquote>
+<p>jvm.config</p>
+</blockquote>
+<p>修改时区<br>修改-Xms、-Xmx、MaxDirectMemorySize</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">-server</span><br><span class="line">-Xms24g</span><br><span class="line">-Xmx24g</span><br><span class="line">-XX:MaxDirectMemorySize=20g</span><br><span class="line">-Duser.timezone=UTC+0800</span><br><span class="line">-Dfile.encoding=UTF-8</span><br><span class="line">-Djava.io.tmpdir=var/tmp</span><br><span class="line">-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>runtime.properties</p>
+</blockquote>
+<p>修改host和port<br>调整druid.server.http.numThreads和druid.processing.numThreads（建议cores-1）<br>注意：MaxDirectMemorySiz &gt;&#x3D; druid.processing.buffer.sizeBytes * (druid.processing.numMergeBuffers + druid.processing.numThreads + 1)<br>设置druid.sql.enable为true，可以使用sql<br>设置druid.query.groupBy.maxOnDiskStorag。合并缓冲区或dictionary填满时，将结果集溢出到磁盘的最大磁盘空间（每次查询）。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">druid.service=druid/broker</span><br><span class="line">druid.host=192.168.1.120</span><br><span class="line">druid.port=28082</span><br><span class="line"></span><br><span class="line"># HTTP server threads</span><br><span class="line">druid.broker.http.numConnections=50</span><br><span class="line">druid.server.http.numThreads=40</span><br><span class="line"></span><br><span class="line"># Processing threads and buffers</span><br><span class="line">druid.processing.buffer.sizeBytes=1073741824</span><br><span class="line">druid.processing.numMergeBuffers=4</span><br><span class="line">druid.processing.numThreads=14</span><br><span class="line">druid.processing.tmpDir=var/druid/processing</span><br><span class="line"></span><br><span class="line"># SQL</span><br><span class="line">druid.sql.enable = true</span><br><span class="line"></span><br><span class="line"># Query cache</span><br><span class="line">#druid.broker.cache.useCache=true</span><br><span class="line">#druid.broker.cache.populateCache=true</span><br><span class="line">#druid.cache.type=local</span><br><span class="line">#druid.cache.sizeInBytes=2000000000</span><br><span class="line"></span><br><span class="line"># Query config</span><br><span class="line"># 查询节点请求历史节点方式，有random和connectionCount两种连接方式</span><br><span class="line">druid.broker.balancer.type=connectionCount</span><br><span class="line">druid.query.groupBy.maxOnDiskStorage=10737418240</span><br></pre></td></tr></table></figure>
+
+<h2 id="启动集群"><a href="#启动集群" class="headerlink" title="启动集群"></a>启动集群</h2><blockquote>
+<p>修改bin&#x2F;node.sh</p>
+</blockquote>
+<p>在文件前面添加 DRUID_CONF_DIR&#x3D;”conf-online&#x2F;druid”</p>
+<blockquote>
+<p>复制配置到其他节点上，注意要修改 host</p>
+</blockquote>
+<blockquote>
+<p>启动 Master节点</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bin/coordinator.sh start</span><br><span class="line">bin/overlord.sh start</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>启动 Data节点</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bin/historical.sh start</span><br><span class="line">bin/middleManager.sh start</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>启动 Query节点</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/broker.sh start</span><br></pre></td></tr></table></figure>
+
+<h2 id="安装Superset"><a href="#安装Superset" class="headerlink" title="安装Superset"></a>安装Superset</h2><p>Superset是一款开源的数据探索与可视化工具，支持Druid数据源，可以将druid中的数据可视化的展示，还可以支持Sql查询。<br>项目地址：<a target="_blank" rel="noopener" href="https://github.com/apache/incubator-superset">https://github.com/apache/incubator-superset</a><br>安装参考：<a target="_blank" rel="noopener" href="https://superset.incubator.apache.org/installation.html">https://superset.incubator.apache.org/installation.html</a></p>
+<h2 id="遇到的问题"><a href="#遇到的问题" class="headerlink" title="遇到的问题"></a>遇到的问题</h2><blockquote>
+<p>Not enough direct memory. </p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Not enough direct memory.  Please adjust -XX:MaxDirectMemorySize, druid.processing.buffer.sizeBytes, druid.processing.numThreads, or druid.processing.numMergeBuffers: maxDirectMemory[1,073,741,824], memoryNeeded[6,979,321,856] = druid.processing.buffer.sizeBytes[536,870,912] * (druid.processing.numMergeBuffers[2] + druid.processing.numThreads[10] + 1)</span><br></pre></td></tr></table></figure>
+
+<p>修改-XX:MaxDirectMemorySize，使得：MaxDirectMemorySiz &gt;&#x3D; druid.processing.buffer.sizeBytes * (druid.processing.numMergeBuffers + druid.processing.numThreads + 1)</p>
+<blockquote>
+<p>Failed to create directory within 10000 attempts</p>
+</blockquote>
+<p>手动创建var&#x2F;tmp目录，路径错误，在druid中有一个环境路径需要提前手工创建environment:java.io.tmpdir&#x3D;var&#x2F;tmp</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">java.lang.IllegalStateException: Failed to create directory within 10000 attempts (tried 1538122986466-0 to 1538122986466-9999)</span><br><span class="line">	at com.google.common.io.Files.createTempDir(Files.java:600) ~[guava-16.0.1.jar:?]</span><br><span class="line">	at io.druid.segment.indexing.RealtimeTuningConfig.createNewBasePersistDirectory(RealtimeTuningConfig.java:58) ~[druid-server-0.12.3.jar:0.12.3]</span><br><span class="line">	at io.druid.segment.indexing.RealtimeTuningConfig.makeDefaultTuningConfig(RealtimeTuningConfig.java:68) ~[druid-server-0.12.3.jar:0.12.3]</span><br><span class="line">	at io.druid.segment.realtime.FireDepartment.&lt;init&gt;(FireDepartment.java:62) ~[druid-server-0.12.3.jar:0.12.3]</span><br><span class="line">	at io.druid.indexing.kafka.KafkaIndexTask.run(KafkaIndexTask.java:397) ~[?:?]</span><br><span class="line">	at io.druid.indexing.overlord.ThreadPoolTaskRunner$ThreadPoolTaskRunnerCallable.call(ThreadPoolTaskRunner.java:444) [druid-indexing-service-0.12.3.jar:0.12.3]</span><br><span class="line">	at io.druid.indexing.overlord.ThreadPoolTaskRunner$ThreadPoolTaskRunnerCallable.call(ThreadPoolTaskRunner.java:416) [druid-indexing-service-0.12.3.jar:0.12.3]</span><br><span class="line">	at java.util.concurrent.FutureTask.run(FutureTask.java:266) [?:1.8.0_131]</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142) [?:1.8.0_131]</span><br><span class="line">	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617) [?:1.8.0_131]</span><br><span class="line">	at java.lang.Thread.run(Thread.java:748) [?:1.8.0_131]</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Druid/" rel="tag"># Druid</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/09/26/Druid%E6%9E%84%E6%9E%B6/" rel="next" title="Druid构架">
+                <i class="fa fa-chevron-left"></i> Druid构架
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/10/09/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E5%85%AD%E3%80%81%E8%87%AA%E5%AE%9A%E4%B9%89Flume%E6%8F%92%E4%BB%B6/" rel="prev" title="《Flume系列文章》 六、自定义Flume插件">
+                《Flume系列文章》 六、自定义Flume插件 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BD%E8%A7%A3%E5%8E%8B%E5%AE%89%E8%A3%85%E5%8C%85"><span class="nav-number">1.</span> <span class="nav-text">下载解压安装包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAMetadata-storage%E5%92%8CDeep-storage"><span class="nav-number">2.</span> <span class="nav-text">创建Metadata storage和Deep storage</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E5%88%86%E9%85%8D"><span class="nav-number">3.</span> <span class="nav-text">集群分配</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">4.</span> <span class="nav-text">配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Common%E9%85%8D%E7%BD%AE"><span class="nav-number">4.1.</span> <span class="nav-text">Common配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Coordinator%E9%85%8D%E7%BD%AE"><span class="nav-number">4.2.</span> <span class="nav-text">Coordinator配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Overlord%E9%85%8D%E7%BD%AE"><span class="nav-number">4.3.</span> <span class="nav-text">Overlord配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Historical%E9%85%8D%E7%BD%AE"><span class="nav-number">4.4.</span> <span class="nav-text">Historical配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MiddleManager%E9%85%8D%E7%BD%AE"><span class="nav-number">4.5.</span> <span class="nav-text">MiddleManager配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Broker%E9%85%8D%E7%BD%AE"><span class="nav-number">4.6.</span> <span class="nav-text">Broker配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E9%9B%86%E7%BE%A4"><span class="nav-number">5.</span> <span class="nav-text">启动集群</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Superset"><span class="nav-number">6.</span> <span class="nav-text">安装Superset</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">7.</span> <span class="nav-text">遇到的问题</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Spark,Spark问题分析," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="问题说明Spark 应用运行失败，查看 Spark UI 界面，发现任务执行正常，没有失败的 Job 和 Task。 问题分析1. 查看 Yarn ResourceManger 的日志从 Spark UI 界面中没有看到失败的 Job 和 Task，查看 Driver 日志看到 ApplicationMaster: RECEIVED SIGNAL TERM 信息，怀疑 Spark 应用被 kill">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark Yarn ApplicationMaster 超时退出">
+<meta property="og:url" content="https://wforget.github.io/2021/07/28/Spark-Yarn-ApplicationMaster-%E8%B6%85%E6%97%B6%E9%80%80%E5%87%BA/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="问题说明Spark 应用运行失败，查看 Spark UI 界面，发现任务执行正常，没有失败的 Job 和 Task。 问题分析1. 查看 Yarn ResourceManger 的日志从 Spark UI 界面中没有看到失败的 Job 和 Task，查看 Driver 日志看到 ApplicationMaster: RECEIVED SIGNAL TERM 信息，怀疑 Spark 应用被 kill">
+<meta property="og:locale">
+<meta property="article:published_time" content="2021-07-28T04:00:00.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.808Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="Spark问题分析">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2021/07/28/Spark-Yarn-ApplicationMaster-超时退出/"/>
+
+
+
+
+
+  <title>Spark Yarn ApplicationMaster 超时退出 | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2021/07/28/Spark-Yarn-ApplicationMaster-%E8%B6%85%E6%97%B6%E9%80%80%E5%87%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Spark Yarn ApplicationMaster 超时退出</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2021-07-28T12:00:00+08:00">
+                2021-07-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="问题说明"><a href="#问题说明" class="headerlink" title="问题说明"></a>问题说明</h3><p>Spark 应用运行失败，查看 Spark UI 界面，发现任务执行正常，没有失败的 Job 和 Task。</p>
+<h3 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h3><h4 id="1-查看-Yarn-ResourceManger-的日志"><a href="#1-查看-Yarn-ResourceManger-的日志" class="headerlink" title="1. 查看 Yarn ResourceManger 的日志"></a>1. 查看 Yarn ResourceManger 的日志</h4><p>从 Spark UI 界面中没有看到失败的 Job 和 Task，查看 Driver 日志看到 <code>ApplicationMaster: RECEIVED SIGNAL TERM</code> 信息，怀疑 Spark 应用被 kill 了，所以查看了 Yarn ResourceManger  日志，可以看到 Yarn 判断 ApplicationMaster 心跳超时导致，发送 TERM 信号。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Expired:appattempt_1623809535012_3914039_000001 Timed out after 90 secs</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-分析-Spark-ApplicationMaster-代码"><a href="#2-分析-Spark-ApplicationMaster-代码" class="headerlink" title="2. 分析 Spark ApplicationMaster 代码"></a>2. 分析 Spark ApplicationMaster 代码</h4><p><code>ApplicationMaster</code> 代码中启动 <code>Reporter </code> 线程调用 <code>org.apache.spark.deploy.yarn.ApplicationMaster#allocationThreadImpl</code> 方法，通过 while 循环向 Yarn 发送心跳。</p>
+<p>怀疑是不是 Reporter 线程挂掉了，查看代码可确定日志中 <code>Reporter</code> 关键字，在 Driver 日志中并未发现异常退出信息。后直接在日志中查找 <code>ApplicationMaster </code> 关键字，发现如下信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">21/07/26 16:00:21 INFO ApplicationMaster: Final app status: SUCCEEDED, exitCode: 0</span><br><span class="line"></span><br><span class="line">21/07/26 16:00:21 INFO SparkContext: Invoking stop() from shutdown hook</span><br><span class="line"></span><br><span class="line">........</span><br><span class="line"></span><br><span class="line">21/07/26 16:02:02 ERROR ApplicationMaster: RECEIVED SIGNAL TERM</span><br></pre></td></tr></table></figure>
+
+<p>可以看到先打印了 <code>SUCCEEDED</code> 状态，刚好大约 90s 后接收到 <code>TERM</code> 信号。</p>
+<p>查看 ApplicationMaster 代码，在用户包的 <code>main</code> 方法执行完成后，改变为成功状态，并设置 finished&#x3D;true，从而导致 Reporter 线程正常退出。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">val userThread = new Thread &#123;</span><br><span class="line">      override def run() &#123;</span><br><span class="line">        try &#123;</span><br><span class="line">          if (!Modifier.isStatic(mainMethod.getModifiers)) &#123;</span><br><span class="line">            logError(s&quot;Could not find static main method in object $&#123;args.userClass&#125;&quot;)</span><br><span class="line">            finish(FinalApplicationStatus.FAILED, ApplicationMaster.EXIT_EXCEPTION_USER_CLASS)</span><br><span class="line">          &#125; else &#123;</span><br><span class="line">            mainMethod.invoke(null, userArgs.toArray)</span><br><span class="line">            finish(FinalApplicationStatus.SUCCEEDED, ApplicationMaster.EXIT_SUCCESS)</span><br><span class="line">            logDebug(&quot;Done running user class&quot;)</span><br><span class="line">          &#125;</span><br><span class="line">        &#125; catch &#123;</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+
+<p>成功状态后进程并未退出，可以看到 SparkContext.stop() 方法在 main 方法执行完成后在执行的，由于 SparkContext 中添加 ShutdownHook 执行 stop() 方法。</p>
+<h3 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h3><p>通过上面分析得出结论，由于在执行完用户包的 mian 方法后，Reporter 线程退出，执行 SparkContext.stop() ，并且 SparkContext.stop() 方法执行时间超过 90s (yarn.am.liveness-monitor.expiry-interval-ms)，导致 Yarn 认为 ApplicationMaster 超时，向 ApplicationMaster  发送 TERM 信号，停止任务。</p>
+<p>根据以上结论，让用户在程序结束时显示调用 SparkContext.stop()  解决问题。</p>
+<h3 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h3><p>继续排查 SparkContext.stop 慢的原因，发现大量 AppStatusListener 异常信息，怀疑是 AppStatusListener 接收到了太多的事件，导致处理过慢。</p>
+<p>查看 SparkUI 界面，发现 Stage 的 task 数量很多，并且执行时间都非常短，查看用户配置，发现 <code>spark.sql.shuffle.partitions</code> 参数设置太大，用户修改后程序正常。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Spark/" rel="tag"># Spark</a>
+          
+            <a href="/tags/Spark%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/" rel="tag"># Spark问题分析</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/07/02/Kyuubi-%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94/" rel="next" title="Kyuubi 架构对比">
+                <i class="fa fa-chevron-left"></i> Kyuubi 架构对比
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/11/23/Kyuubi-%E8%B0%83%E7%A0%94%E6%B5%8B%E8%AF%95/" rel="prev" title="Kyuubi 调研测试">
+                Kyuubi 调研测试 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%AF%B4%E6%98%8E"><span class="nav-number">1.</span> <span class="nav-text">问题说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">问题分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E6%9F%A5%E7%9C%8B-Yarn-ResourceManger-%E7%9A%84%E6%97%A5%E5%BF%97"><span class="nav-number">2.1.</span> <span class="nav-text">1. 查看 Yarn ResourceManger 的日志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E5%88%86%E6%9E%90-Spark-ApplicationMaster-%E4%BB%A3%E7%A0%81"><span class="nav-number">2.2.</span> <span class="nav-text">2. 分析 Spark ApplicationMaster 代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3"><span class="nav-number">3.</span> <span class="nav-text">解决</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8E%E7%BB%AD"><span class="nav-number">4.</span> <span class="nav-text">后续</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

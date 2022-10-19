@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Flume," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="SourceRunner在上片文章中，Flume Node启动的是SourceRunner，SourceRunner的实现类有两个，PollableSourceRunner和EventDrivenSourceRunner。PollableSourceRunner的start方法会启动一个线程，线程内部通过while不断调用PollableSource的process()方法。EventDriven">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《Flume系列文章》 三、Flume源码分析之Flume Source">
+<meta property="og:url" content="https://wforget.github.io/2018/09/12/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%B8%89%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Source/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="SourceRunner在上片文章中，Flume Node启动的是SourceRunner，SourceRunner的实现类有两个，PollableSourceRunner和EventDrivenSourceRunner。PollableSourceRunner的start方法会启动一个线程，线程内部通过while不断调用PollableSource的process()方法。EventDriven">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-09-12T04:56:09.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.815Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Flume">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2018/09/12/《Flume系列文章》-三、Flume源码分析之Flume-Source/"/>
+
+
+
+
+
+  <title>《Flume系列文章》 三、Flume源码分析之Flume Source | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/09/12/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%B8%89%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Source/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">《Flume系列文章》 三、Flume源码分析之Flume Source</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-12T12:56:09+08:00">
+                2018-09-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="SourceRunner"><a href="#SourceRunner" class="headerlink" title="SourceRunner"></a>SourceRunner</h2><p>在上片文章中，Flume Node启动的是SourceRunner，SourceRunner的实现类有两个，PollableSourceRunner和EventDrivenSourceRunner。<br>PollableSourceRunner的start方法会启动一个线程，线程内部通过while不断调用PollableSource的process()方法。EventDrivenSourceRunner的start方法则只调用一次EventDrivenSource的start()方法。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">public static class PollingRunner implements Runnable &#123;</span><br><span class="line"></span><br><span class="line">  private PollableSource source;</span><br><span class="line">  private AtomicBoolean shouldStop;</span><br><span class="line">  private CounterGroup counterGroup;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public void run() &#123;</span><br><span class="line">    logger.debug(&quot;Polling runner starting. Source:&#123;&#125;&quot;, source);</span><br><span class="line"></span><br><span class="line">    while (!shouldStop.get()) &#123;   //循环执行Source的process方法</span><br><span class="line">      counterGroup.incrementAndGet(&quot;runner.polls&quot;);</span><br><span class="line"></span><br><span class="line">      try &#123;</span><br><span class="line">        // 这里执行source.process()并对执行的结果进行判断，如果执行失败会休眠一段时间。</span><br><span class="line">        // 休眠的时间则是取的maxBackoffSleep（默认5000ms）和consecutive*backoffSleepIncrement（默认1000ms）的最小值。</span><br><span class="line">        // runner.backoffs.consecutive计数的记录连续失败的次数。</span><br><span class="line">        if (source.process().equals(PollableSource.Status.BACKOFF)) &#123;</span><br><span class="line">          counterGroup.incrementAndGet(&quot;runner.backoffs&quot;);</span><br><span class="line"></span><br><span class="line">          Thread.sleep(Math.min(</span><br><span class="line">              counterGroup.incrementAndGet(&quot;runner.backoffs.consecutive&quot;)</span><br><span class="line">              * source.getBackOffSleepIncrement(), source.getMaxBackOffSleepInterval()));</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">          counterGroup.set(&quot;runner.backoffs.consecutive&quot;, 0L);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; catch (InterruptedException e) &#123;</span><br><span class="line">        logger.info(&quot;Source runner interrupted. Exiting&quot;);</span><br><span class="line">        counterGroup.incrementAndGet(&quot;runner.interruptions&quot;);</span><br><span class="line">      &#125; catch (EventDeliveryException e) &#123;</span><br><span class="line">        logger.error(&quot;Unable to deliver event. Exception follows.&quot;, e);</span><br><span class="line">        counterGroup.incrementAndGet(&quot;runner.deliveryErrors&quot;);</span><br><span class="line">      &#125; catch (Exception e) &#123;</span><br><span class="line">        counterGroup.incrementAndGet(&quot;runner.errors&quot;);</span><br><span class="line">        logger.error(&quot;Unhandled exception, logging and sleeping for &quot; +</span><br><span class="line">            source.getMaxBackOffSleepInterval() + &quot;ms&quot;, e);</span><br><span class="line">        try &#123;</span><br><span class="line">          Thread.sleep(source.getMaxBackOffSleepInterval());</span><br><span class="line">        &#125; catch (InterruptedException ex) &#123;</span><br><span class="line">          Thread.currentThread().interrupt();</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    logger.debug(&quot;Polling runner exiting. Metrics:&#123;&#125;&quot;, counterGroup);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="HTTPSource"><a href="#HTTPSource" class="headerlink" title="HTTPSource"></a>HTTPSource</h2><p>HTTPSource是EventDrivenSource的一个实现类。start()方法中启动了一个jetty server，在doPost方法中接收events然后发送给channel，下面看一个FlumeHTTPServlet的doPost()方法。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">public void doPost(HttpServletRequest request, HttpServletResponse response)</span><br><span class="line">        throws IOException &#123;</span><br><span class="line">  List&lt;Event&gt; events = Collections.emptyList(); //create empty list</span><br><span class="line">  try &#123;</span><br><span class="line">    events = handler.getEvents(request);    //从request中获取Events。</span><br><span class="line">  &#125; catch (HTTPBadRequestException ex) &#123;</span><br><span class="line">    LOG.warn(&quot;Received bad request from client. &quot;, ex);</span><br><span class="line">    response.sendError(HttpServletResponse.SC_BAD_REQUEST,</span><br><span class="line">            &quot;Bad request from client. &quot;</span><br><span class="line">            + ex.getMessage());</span><br><span class="line">    return;</span><br><span class="line">  &#125; catch (Exception ex) &#123;</span><br><span class="line">    LOG.warn(&quot;Deserializer threw unexpected exception. &quot;, ex);</span><br><span class="line">    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,</span><br><span class="line">            &quot;Deserializer threw unexpected exception. &quot;</span><br><span class="line">            + ex.getMessage());</span><br><span class="line">    return;</span><br><span class="line">  &#125;</span><br><span class="line">  sourceCounter.incrementAppendBatchReceivedCount();</span><br><span class="line">  sourceCounter.addToEventReceivedCount(events.size());</span><br><span class="line">  try &#123;</span><br><span class="line">    getChannelProcessor().processEventBatch(events);  //通过ChannelProcessor处理events，将events发送到Channel中</span><br><span class="line">  &#125; catch (ChannelException ex) &#123;	//发送channel失败，返回错误消息</span><br><span class="line">    LOG.warn(&quot;Error appending event to channel. &quot;</span><br><span class="line">            + &quot;Channel might be full. Consider increasing the channel &quot;</span><br><span class="line">            + &quot;capacity or make sure the sinks perform faster.&quot;, ex);</span><br><span class="line">    response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE,</span><br><span class="line">            &quot;Error appending event to channel. Channel might be full.&quot;</span><br><span class="line">            + ex.getMessage());</span><br><span class="line">    return;</span><br><span class="line">  &#125; catch (Exception ex) &#123;</span><br><span class="line">    LOG.warn(&quot;Unexpected error appending event to channel. &quot;, ex);</span><br><span class="line">    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,</span><br><span class="line">            &quot;Unexpected error while appending event to channel. &quot;</span><br><span class="line">            + ex.getMessage());</span><br><span class="line">    return;</span><br><span class="line">  &#125;</span><br><span class="line">  response.setCharacterEncoding(request.getCharacterEncoding());</span><br><span class="line">  response.setStatus(HttpServletResponse.SC_OK);</span><br><span class="line">  response.flushBuffer();</span><br><span class="line">  sourceCounter.incrementAppendBatchAcceptedCount();</span><br><span class="line">  sourceCounter.addToEventAcceptedCount(events.size());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="KafkaSource"><a href="#KafkaSource" class="headerlink" title="KafkaSource"></a>KafkaSource</h2><p>KafkaSource是PollableSource的一个实现类。doProcess()方法获取kafka的数据并通过ChannelProcessor发送到Channel中，处理完成后提交offset。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br></pre></td><td class="code"><pre><span class="line">protected Status doProcess() throws EventDeliveryException &#123;</span><br><span class="line">  final String batchUUID = UUID.randomUUID().toString();</span><br><span class="line">  byte[] kafkaMessage;</span><br><span class="line">  String kafkaKey;</span><br><span class="line">  Event event;</span><br><span class="line">  byte[] eventBody;</span><br><span class="line"></span><br><span class="line">  try &#123;</span><br><span class="line">    // prepare time variables for new batch</span><br><span class="line">    final long nanoBatchStartTime = System.nanoTime();</span><br><span class="line">    final long batchStartTime = System.currentTimeMillis();</span><br><span class="line">    final long maxBatchEndTime = System.currentTimeMillis() + maxBatchDurationMillis;</span><br><span class="line"></span><br><span class="line">    while (eventList.size() &lt; batchUpperLimit &amp;&amp;    //判断eventList的长度是否超过batchSize</span><br><span class="line">            System.currentTimeMillis() &lt; maxBatchEndTime) &#123;   //判断持续的时间是否超过batchDurationMillis</span><br><span class="line"></span><br><span class="line">      if (it == null || !it.hasNext()) &#123;  //判断一次poll的ConsumerRecords是否处理完了，如果完成则继续从kafka中poll数据</span><br><span class="line">        // Obtaining new records</span><br><span class="line">        // Poll time is remainder time for current batch.</span><br><span class="line">        ConsumerRecords&lt;String, byte[]&gt; records = consumer.poll(</span><br><span class="line">                Math.max(0, maxBatchEndTime - System.currentTimeMillis()));</span><br><span class="line">        it = records.iterator();</span><br><span class="line"></span><br><span class="line">        // this flag is set to true in a callback when some partitions are revoked.</span><br><span class="line">        // If there are any records we commit them.</span><br><span class="line">        //rebalanceFlag通过SourceRebalanceListener，监听kafka是否正在进行rebalance，正在rebalance的时候会将rebalanceFlag设置成true</span><br><span class="line">        if (rebalanceFlag.get()) &#123;</span><br><span class="line">          rebalanceFlag.set(false);</span><br><span class="line">          break;</span><br><span class="line">        &#125;</span><br><span class="line">        // check records after poll</span><br><span class="line">        if (!it.hasNext()) &#123;</span><br><span class="line">          if (log.isDebugEnabled()) &#123;</span><br><span class="line">            counter.incrementKafkaEmptyCount();</span><br><span class="line">            log.debug(&quot;Returning with backoff. No more data to read&quot;);</span><br><span class="line">          &#125;</span><br><span class="line">          // batch time exceeded</span><br><span class="line">          break;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      // get next message</span><br><span class="line">      ConsumerRecord&lt;String, byte[]&gt; message = it.next();</span><br><span class="line">      kafkaKey = message.key();</span><br><span class="line">      kafkaMessage = message.value();</span><br><span class="line"></span><br><span class="line">      if (useAvroEventFormat) &#123;</span><br><span class="line">        //Assume the event is in Avro format using the AvroFlumeEvent schema</span><br><span class="line">        //Will need to catch the exception if it is not</span><br><span class="line">        ByteArrayInputStream in =</span><br><span class="line">                new ByteArrayInputStream(message.value());</span><br><span class="line">        decoder = DecoderFactory.get().directBinaryDecoder(in, decoder);</span><br><span class="line">        if (!reader.isPresent()) &#123;</span><br><span class="line">          reader = Optional.of(</span><br><span class="line">                  new SpecificDatumReader&lt;AvroFlumeEvent&gt;(AvroFlumeEvent.class));</span><br><span class="line">        &#125;</span><br><span class="line">        //This may throw an exception but it will be caught by the</span><br><span class="line">        //exception handler below and logged at error</span><br><span class="line">        AvroFlumeEvent avroevent = reader.get().read(null, decoder);</span><br><span class="line"></span><br><span class="line">        eventBody = avroevent.getBody().array();</span><br><span class="line">        headers = toStringMap(avroevent.getHeaders());</span><br><span class="line">      &#125; else &#123;</span><br><span class="line">        eventBody = message.value();</span><br><span class="line">        headers.clear();</span><br><span class="line">        headers = new HashMap&lt;String, String&gt;(4);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      // Add headers to event (timestamp, topic, partition, key) only if they don&#x27;t exist</span><br><span class="line">      if (!headers.containsKey(KafkaSourceConstants.TIMESTAMP_HEADER)) &#123;</span><br><span class="line">        headers.put(KafkaSourceConstants.TIMESTAMP_HEADER,</span><br><span class="line">            String.valueOf(System.currentTimeMillis()));</span><br><span class="line">      &#125;</span><br><span class="line">      // Only set the topic header if setTopicHeader and it isn&#x27;t already populated</span><br><span class="line">      if (setTopicHeader &amp;&amp; !headers.containsKey(topicHeader)) &#123;</span><br><span class="line">        headers.put(topicHeader, message.topic());</span><br><span class="line">      &#125;</span><br><span class="line">      if (!headers.containsKey(KafkaSourceConstants.PARTITION_HEADER)) &#123;</span><br><span class="line">        headers.put(KafkaSourceConstants.PARTITION_HEADER,</span><br><span class="line">            String.valueOf(message.partition()));</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      if (kafkaKey != null) &#123;</span><br><span class="line">        headers.put(KafkaSourceConstants.KEY_HEADER, kafkaKey);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      if (log.isTraceEnabled()) &#123;</span><br><span class="line">        if (LogPrivacyUtil.allowLogRawData()) &#123;</span><br><span class="line">          log.trace(&quot;Topic: &#123;&#125; Partition: &#123;&#125; Message: &#123;&#125;&quot;, new String[]&#123;</span><br><span class="line">              message.topic(),</span><br><span class="line">              String.valueOf(message.partition()),</span><br><span class="line">              new String(eventBody)</span><br><span class="line">          &#125;);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">          log.trace(&quot;Topic: &#123;&#125; Partition: &#123;&#125; Message arrived.&quot;,</span><br><span class="line">              message.topic(),</span><br><span class="line">              String.valueOf(message.partition()));</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      event = EventBuilder.withBody(eventBody, headers);</span><br><span class="line">      eventList.add(event); //将event添加到eventList中</span><br><span class="line"></span><br><span class="line">      if (log.isDebugEnabled()) &#123;</span><br><span class="line">        log.debug(&quot;Waited: &#123;&#125; &quot;, System.currentTimeMillis() - batchStartTime);</span><br><span class="line">        log.debug(&quot;Event #: &#123;&#125;&quot;, eventList.size());</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      // For each partition store next offset that is going to be read.</span><br><span class="line">      // 记录kafka每个parttiion的offset</span><br><span class="line">      tpAndOffsetMetadata.put(new TopicPartition(message.topic(), message.partition()),</span><br><span class="line">              new OffsetAndMetadata(message.offset() + 1, batchUUID));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    if (eventList.size() &gt; 0) &#123;</span><br><span class="line">      counter.addToKafkaEventGetTimer((System.nanoTime() - nanoBatchStartTime) / (1000 * 1000));</span><br><span class="line">      counter.addToEventReceivedCount((long) eventList.size());</span><br><span class="line">      getChannelProcessor().processEventBatch(eventList);   //将eventList发送给Channel</span><br><span class="line">      counter.addToEventAcceptedCount(eventList.size());</span><br><span class="line">      if (log.isDebugEnabled()) &#123;</span><br><span class="line">        log.debug(&quot;Wrote &#123;&#125; events to channel&quot;, eventList.size());</span><br><span class="line">      &#125;</span><br><span class="line">      eventList.clear();  //清除eventList</span><br><span class="line"></span><br><span class="line">      if (!tpAndOffsetMetadata.isEmpty()) &#123;   //同步kafka的offset</span><br><span class="line">        long commitStartTime = System.nanoTime();</span><br><span class="line">        // TODO</span><br><span class="line">        // 这里有一个bug，如果commitSync失败的话，会重复消费</span><br><span class="line">        // eventList已经提交给channel了，但是offset没有提交成功，下次消费的时候kafka会重复消费之前的数据。</span><br><span class="line">        consumer.commitSync(tpAndOffsetMetadata);</span><br><span class="line">        long commitEndTime = System.nanoTime();</span><br><span class="line">        counter.addToKafkaCommitTimer((commitEndTime - commitStartTime) / (1000 * 1000));</span><br><span class="line">        tpAndOffsetMetadata.clear();  //清除tpAndOffsetMetadata</span><br><span class="line">      &#125;</span><br><span class="line">      return Status.READY;  //成功后返回ready状态</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return Status.BACKOFF;</span><br><span class="line">  &#125; catch (Exception e) &#123;	//如果processEventBatch发送channel失败，则不会同步offset，会重新消费之前的数据</span><br><span class="line">    log.error(&quot;KafkaSource EXCEPTION, &#123;&#125;&quot;, e);</span><br><span class="line">    return Status.BACKOFF;  //失败后返回backoff状态，PollableSourceRunner休眠一段时间</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="ChannelProcessor"><a href="#ChannelProcessor" class="headerlink" title="ChannelProcessor"></a>ChannelProcessor</h2><p>在Source中是通过ChannelProcessor的processEventBatch&#x2F;processEvent将events发送到channel中，在方法中通过事务机制保证了数据一致性，保证了一次processEventBatch&#x2F;processEvent方法要么将全部的events放入channel中要么都不会放入channel中，后面在详细对Flume的事务进行分析。在ChannelProcessor还包含了ChannelSelector和InterceptorChain。<br>ChannelSelector是根据events的相关数据，将events发送到对应的channel中，参考：<a target="_blank" rel="noopener" href="http://flume.apache.org/FlumeUserGuide.html#flume-channel-selectors">http://flume.apache.org/FlumeUserGuide.html#flume-channel-selectors</a>。<br>Interceptor可以在events发送到channel之前对events进行修改或删除，参考：<a target="_blank" rel="noopener" href="http://flume.apache.org/FlumeUserGuide.html#flume-interceptors">http://flume.apache.org/FlumeUserGuide.html#flume-interceptors</a>。</p>
+<blockquote>
+<p>InterceptorChain</p>
+</blockquote>
+<p>自定义的Interceptor通过实现intercept方法，可以对events进行修改或删除。不过有一个局限就是”public Event intercept(Event event);”这个方法不能够将一个event转成多个event，在项目中我遇到的一个问题是kafka source中消费的event是一个JSON数组字符串，需要转换成单个event进行落盘。解决方法是修改kafkasource代码，在里面添加一个Transform对象，进行转换操作。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">class InterceptorChain:</span><br><span class="line">  @Override</span><br><span class="line">  public Event intercept(Event event) &#123;</span><br><span class="line">    for (Interceptor interceptor : interceptors) &#123;</span><br><span class="line">      if (event == null) &#123;</span><br><span class="line">        return null;</span><br><span class="line">      &#125;</span><br><span class="line">      event = interceptor.intercept(event);		//调用interceptor处理event</span><br><span class="line">    &#125;</span><br><span class="line">    return event;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  @Override</span><br><span class="line">  public List&lt;Event&gt; intercept(List&lt;Event&gt; events) &#123;</span><br><span class="line">    for (Interceptor interceptor : interceptors) &#123;</span><br><span class="line">      if (events.isEmpty()) &#123;</span><br><span class="line">        return events;</span><br><span class="line">      &#125;</span><br><span class="line">      events = interceptor.intercept(events);	//调用interceptor处理events</span><br><span class="line">      Preconditions.checkNotNull(events,</span><br><span class="line">          &quot;Event list returned null from interceptor %s&quot;, interceptor);</span><br><span class="line">    &#125;</span><br><span class="line">    return events;</span><br><span class="line">  &#125;</span><br><span class="line">interface Interceptor:</span><br><span class="line">  public Event intercept(Event event);		//如果要删除event，返回null就可以了</span><br><span class="line">  public List&lt;Event&gt; intercept(List&lt;Event&gt; events);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>ChannelSelector</p>
+</blockquote>
+<p>ChannelSelector的子类需要实现下面两个方法，根据event返回必须的channel（RequiredChannels）和非必须的channel（OptionalChannels）。<br>RequiredChannels指的是在source发送event到channel的过程中如果发生的异常，需要告知source（向source抛出异常）<br>OptionalChannels指的是在source发送event到channel的过程中如果发生的异常，不需要告知source（不需要向source抛出异常，不过发生Error错误时会向source抛出）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">public List&lt;Channel&gt; getRequiredChannels(Event event);</span><br><span class="line">public List&lt;Channel&gt; getOptionalChannels(Event event);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>ChannelProcessor.processEventBatch</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line">public void processEventBatch(List&lt;Event&gt; events) &#123;</span><br><span class="line">  Preconditions.checkNotNull(events, &quot;Event list must not be null&quot;);</span><br><span class="line"></span><br><span class="line">  events = interceptorChain.intercept(events);  //interceptor处理events</span><br><span class="line"></span><br><span class="line">  Map&lt;Channel, List&lt;Event&gt;&gt; reqChannelQueue =</span><br><span class="line">      new LinkedHashMap&lt;Channel, List&lt;Event&gt;&gt;();</span><br><span class="line"></span><br><span class="line">  Map&lt;Channel, List&lt;Event&gt;&gt; optChannelQueue =</span><br><span class="line">      new LinkedHashMap&lt;Channel, List&lt;Event&gt;&gt;();</span><br><span class="line"></span><br><span class="line">  for (Event event : events) &#123;</span><br><span class="line">    List&lt;Channel&gt; reqChannels = selector.getRequiredChannels(event);  //获取必须的Channel</span><br><span class="line"></span><br><span class="line">    for (Channel ch : reqChannels) &#123;  //初始化RequiredChannel的队列</span><br><span class="line">      List&lt;Event&gt; eventQueue = reqChannelQueue.get(ch);</span><br><span class="line">      if (eventQueue == null) &#123;</span><br><span class="line">        eventQueue = new ArrayList&lt;Event&gt;();</span><br><span class="line">        reqChannelQueue.put(ch, eventQueue);</span><br><span class="line">      &#125;</span><br><span class="line">      eventQueue.add(event);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    List&lt;Channel&gt; optChannels = selector.getOptionalChannels(event);  //获取可选的Channel</span><br><span class="line"></span><br><span class="line">    for (Channel ch : optChannels) &#123;  //初始化OptionalChannel的队列</span><br><span class="line">      List&lt;Event&gt; eventQueue = optChannelQueue.get(ch);</span><br><span class="line">      if (eventQueue == null) &#123;</span><br><span class="line">        eventQueue = new ArrayList&lt;Event&gt;();</span><br><span class="line">        optChannelQueue.put(ch, eventQueue);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      eventQueue.add(event);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  // Process required channels</span><br><span class="line">  for (Channel reqChannel : reqChannelQueue.keySet()) &#123;</span><br><span class="line">    Transaction tx = reqChannel.getTransaction();</span><br><span class="line">    Preconditions.checkNotNull(tx, &quot;Transaction object must not be null&quot;);</span><br><span class="line">    try &#123;</span><br><span class="line">      tx.begin();   //开启事务</span><br><span class="line"></span><br><span class="line">      List&lt;Event&gt; batch = reqChannelQueue.get(reqChannel);  //获取channel的Events</span><br><span class="line"></span><br><span class="line">      for (Event event : batch) &#123;</span><br><span class="line">        reqChannel.put(event);  //发送event到channel中</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      tx.commit();  //events全部成功发送到channel中，提交事务</span><br><span class="line">    &#125; catch (Throwable t) &#123;</span><br><span class="line">      tx.rollback();  //出现异常，事务回滚，再抛出异常让source处理</span><br><span class="line">      if (t instanceof Error) &#123;</span><br><span class="line">        LOG.error(&quot;Error while writing to required channel: &quot; + reqChannel, t);</span><br><span class="line">        throw (Error) t;</span><br><span class="line">      &#125; else if (t instanceof ChannelException) &#123;</span><br><span class="line">        throw (ChannelException) t;</span><br><span class="line">      &#125; else &#123;</span><br><span class="line">        throw new ChannelException(&quot;Unable to put batch on required &quot; +</span><br><span class="line">            &quot;channel: &quot; + reqChannel, t);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">      if (tx != null) &#123;</span><br><span class="line">        tx.close(); //关闭事务</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  // Process optional channels</span><br><span class="line">  for (Channel optChannel : optChannelQueue.keySet()) &#123;</span><br><span class="line">    Transaction tx = optChannel.getTransaction();</span><br><span class="line">    Preconditions.checkNotNull(tx, &quot;Transaction object must not be null&quot;);</span><br><span class="line">    try &#123;</span><br><span class="line">      tx.begin(); //开启事务</span><br><span class="line"></span><br><span class="line">      List&lt;Event&gt; batch = optChannelQueue.get(optChannel);  //获取channel的Events</span><br><span class="line"></span><br><span class="line">      for (Event event : batch) &#123;</span><br><span class="line">        optChannel.put(event);  //发送event到channel中</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      tx.commit();  //events全部成功发送到channel中，提交事务</span><br><span class="line">    &#125; catch (Throwable t) &#123;</span><br><span class="line">      tx.rollback();  //出现异常，事务回滚。</span><br><span class="line">      LOG.error(&quot;Unable to put batch on optional channel: &quot; + optChannel, t);</span><br><span class="line">      //这里只是在捕获到Error的错误情况下才会对Source抛出异常，其他的情况在不会抛出异常</span><br><span class="line">      if (t instanceof Error) &#123;</span><br><span class="line">        throw (Error) t;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; finally &#123;</span><br><span class="line">      if (tx != null) &#123;</span><br><span class="line">        tx.close(); //关闭事务</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Flume/" rel="tag"># Flume</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/09/10/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%BA%8C%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Node/" rel="next" title="《Flume系列文章》 二、Flume源码分析之Flume Node">
+                <i class="fa fa-chevron-left"></i> 《Flume系列文章》 二、Flume源码分析之Flume Node
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/09/25/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E5%9B%9B%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Sink/" rel="prev" title="《Flume系列文章》 四、Flume源码分析之Flume-Sink">
+                《Flume系列文章》 四、Flume源码分析之Flume-Sink <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#SourceRunner"><span class="nav-number">1.</span> <span class="nav-text">SourceRunner</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HTTPSource"><span class="nav-number">2.</span> <span class="nav-text">HTTPSource</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#KafkaSource"><span class="nav-number">3.</span> <span class="nav-text">KafkaSource</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ChannelProcessor"><span class="nav-number">4.</span> <span class="nav-text">ChannelProcessor</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Redis," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Redis 发布订阅Redis 发布订阅(pub&#x2F;sub)是一种消息通信模式：发送者(pub)发送消息，订阅者(sub)接收消息。Redis 客户端可以订阅任意数量的 channel。 下图展示了频道 channel1 ， 以及订阅这个频道的三个客户端 —— client2 、 client5 和 client1 之间的关系：   当有新消息通过 PUBLISH 命令发送给频道 chan">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis 发布订阅">
+<meta property="og:url" content="https://wforget.github.io/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="Redis 发布订阅Redis 发布订阅(pub&#x2F;sub)是一种消息通信模式：发送者(pub)发送消息，订阅者(sub)接收消息。Redis 客户端可以订阅任意数量的 channel。 下图展示了频道 channel1 ， 以及订阅这个频道的三个客户端 —— client2 、 client5 和 client1 之间的关系：   当有新消息通过 PUBLISH 命令发送给频道 chan">
+<meta property="og:locale">
+<meta property="og:image" content="https://wforget.github.io/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/pubsub1.png">
+<meta property="og:image" content="https://wforget.github.io/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/pubsub2.png">
+<meta property="article:published_time" content="2018-11-06T08:05:35.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.804Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Redis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wforget.github.io/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/pubsub1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2018/11/06/Redis-发布订阅/"/>
+
+
+
+
+
+  <title>Redis 发布订阅 | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Redis 发布订阅</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-11-06T16:05:35+08:00">
+                2018-11-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Redis-发布订阅"><a href="#Redis-发布订阅" class="headerlink" title="Redis 发布订阅"></a>Redis 发布订阅</h2><p>Redis 发布订阅(pub&#x2F;sub)是一种消息通信模式：发送者(pub)发送消息，订阅者(sub)接收消息。Redis 客户端可以订阅任意数量的 channel。</p>
+<p>下图展示了频道 channel1 ， 以及订阅这个频道的三个客户端 —— client2 、 client5 和 client1 之间的关系：</p>
+<img src="/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/pubsub1.png" class="" title="[pubsub1]">
+
+<p>当有新消息通过 PUBLISH 命令发送给频道 channel1 时， 这个消息就会被发送给订阅它的三个客户端：</p>
+<img src="/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/pubsub2.png" class="" title="[pubsub2]">
+
+<h2 id="Redis-发布订阅命令"><a href="#Redis-发布订阅命令" class="headerlink" title="Redis 发布订阅命令"></a>Redis 发布订阅命令</h2><blockquote>
+<p>SUBSCRIBE channel [channel …] </p>
+</blockquote>
+<p>订阅一个或多个 channel</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6380&gt; SUBSCRIBE testChannel</span><br><span class="line">Reading messages... (press Ctrl-C to quit)</span><br><span class="line">1) &quot;subscribe&quot;</span><br><span class="line">2) &quot;testChannel&quot;</span><br><span class="line">3) (integer) 1</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>UNSUBSCRIBE [channel [channel …]] </p>
+</blockquote>
+<p>退订一个或多个 channel</p>
+<blockquote>
+<p>PSUBSCRIBE pattern [pattern …] </p>
+</blockquote>
+<p>订阅所有匹配一个或多个 pattern 的 channel</p>
+<blockquote>
+<p>PUNSUBSCRIBE [pattern [pattern …]] </p>
+</blockquote>
+<p>退订所有匹配一个或多个 pattern 的 channel</p>
+<blockquote>
+<p>PUBLISH channel message </p>
+</blockquote>
+<p>发布消息到指定的 channel</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># 打开一个新的控制台发布消息到 testChannel</span><br><span class="line">127.0.0.1:6380&gt; publish testChannel &quot;test&quot;</span><br><span class="line">(integer) 1</span><br><span class="line">127.0.0.1:6380&gt; publish testChannel &quot;test2&quot;</span><br><span class="line">(integer) 1</span><br><span class="line"></span><br><span class="line"># 查看订阅 testChannel 的控制台</span><br><span class="line">127.0.0.1:6380&gt; SUBSCRIBE testChannel</span><br><span class="line">Reading messages... (press Ctrl-C to quit)</span><br><span class="line">1) &quot;subscribe&quot;</span><br><span class="line">2) &quot;testChannel&quot;</span><br><span class="line">3) (integer) 1</span><br><span class="line">1) &quot;message&quot;</span><br><span class="line">2) &quot;testChannel&quot;</span><br><span class="line">3) &quot;test&quot;</span><br><span class="line">1) &quot;message&quot;</span><br><span class="line">2) &quot;testChannel&quot;</span><br><span class="line">3) &quot;test2&quot;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>PUBSUB subcommand [argument [argument …]] </p>
+</blockquote>
+<p>查看订阅与发布系统状态。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6380&gt; PUBSUB channels</span><br><span class="line">1) &quot;testChannel&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Java-实现-Redis-发布订阅"><a href="#Java-实现-Redis-发布订阅" class="headerlink" title="Java 实现 Redis 发布订阅"></a>Java 实现 Redis 发布订阅</h2><p>JavaApi 向 channel 发送消息可以直接调用 Jedis 的 publish(final String channel, final String message) 方法。订阅 channel 则需要调用 Jedis 的 subscribe(final JedisPubSub jedisPubSub, final String… channels)方法，并实现 JedisPubSub 类的 onMessage() 方法来处理消息。<br>Jedis 的 subscribe() 方法中调用了 JedisPubSub 的 proceed()方法，proceed()方法中订阅 channels 并调用了 process() 方法。process() 方法会一直循环调用 onMessage() 方法处理消息。所以使用 subscribe() 方法时，一般开启新的线程进行订阅，要不然 subscribe() 方法后面的代码不会执行。<br>下面是 JedisPubSub  proceed()方法和 process() 方法的实现：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">public void proceed(Client client, String... channels) &#123;</span><br><span class="line">    this.client = client;</span><br><span class="line">    client.subscribe(channels);</span><br><span class="line">    client.flush();</span><br><span class="line">    process(client);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  private void process(Client client) &#123;</span><br><span class="line"></span><br><span class="line">    do &#123;</span><br><span class="line">      List&lt;Object&gt; reply = client.getRawObjectMultiBulkReply();</span><br><span class="line">      final Object firstObj = reply.get(0);</span><br><span class="line">      if (!(firstObj instanceof byte[])) &#123;</span><br><span class="line">        throw new JedisException(&quot;Unknown message type: &quot; + firstObj);</span><br><span class="line">      &#125;</span><br><span class="line">      final byte[] resp = (byte[]) firstObj;</span><br><span class="line">      if (Arrays.equals(SUBSCRIBE.raw, resp)) &#123;</span><br><span class="line">        subscribedChannels = ((Long) reply.get(2)).intValue();</span><br><span class="line">        final byte[] bchannel = (byte[]) reply.get(1);</span><br><span class="line">        final String strchannel = (bchannel == null) ? null : SafeEncoder.encode(bchannel);</span><br><span class="line">        onSubscribe(strchannel, subscribedChannels);</span><br><span class="line">      &#125; else if (Arrays.equals(UNSUBSCRIBE.raw, resp)) &#123;</span><br><span class="line">        subscribedChannels = ((Long) reply.get(2)).intValue();</span><br><span class="line">        final byte[] bchannel = (byte[]) reply.get(1);</span><br><span class="line">        final String strchannel = (bchannel == null) ? null : SafeEncoder.encode(bchannel);</span><br><span class="line">        onUnsubscribe(strchannel, subscribedChannels);</span><br><span class="line">      &#125; else if (Arrays.equals(MESSAGE.raw, resp)) &#123;</span><br><span class="line">        final byte[] bchannel = (byte[]) reply.get(1);</span><br><span class="line">        final byte[] bmesg = (byte[]) reply.get(2);</span><br><span class="line">        final String strchannel = (bchannel == null) ? null : SafeEncoder.encode(bchannel);</span><br><span class="line">        final String strmesg = (bmesg == null) ? null : SafeEncoder.encode(bmesg);</span><br><span class="line">        onMessage(strchannel, strmesg);</span><br><span class="line">      &#125; else if (Arrays.equals(PMESSAGE.raw, resp)) &#123;</span><br><span class="line">        final byte[] bpattern = (byte[]) reply.get(1);</span><br><span class="line">        final byte[] bchannel = (byte[]) reply.get(2);</span><br><span class="line">        final byte[] bmesg = (byte[]) reply.get(3);</span><br><span class="line">        final String strpattern = (bpattern == null) ? null : SafeEncoder.encode(bpattern);</span><br><span class="line">        final String strchannel = (bchannel == null) ? null : SafeEncoder.encode(bchannel);</span><br><span class="line">        final String strmesg = (bmesg == null) ? null : SafeEncoder.encode(bmesg);</span><br><span class="line">        onPMessage(strpattern, strchannel, strmesg);</span><br><span class="line">      &#125; else if (Arrays.equals(PSUBSCRIBE.raw, resp)) &#123;</span><br><span class="line">        subscribedChannels = ((Long) reply.get(2)).intValue();</span><br><span class="line">        final byte[] bpattern = (byte[]) reply.get(1);</span><br><span class="line">        final String strpattern = (bpattern == null) ? null : SafeEncoder.encode(bpattern);</span><br><span class="line">        onPSubscribe(strpattern, subscribedChannels);</span><br><span class="line">      &#125; else if (Arrays.equals(PUNSUBSCRIBE.raw, resp)) &#123;</span><br><span class="line">        subscribedChannels = ((Long) reply.get(2)).intValue();</span><br><span class="line">        final byte[] bpattern = (byte[]) reply.get(1);</span><br><span class="line">        final String strpattern = (bpattern == null) ? null : SafeEncoder.encode(bpattern);</span><br><span class="line">        onPUnsubscribe(strpattern, subscribedChannels);</span><br><span class="line">      &#125; else if (Arrays.equals(PONG.raw, resp)) &#123;</span><br><span class="line">        final byte[] bpattern = (byte[]) reply.get(1);</span><br><span class="line">        final String strpattern = (bpattern == null) ? null : SafeEncoder.encode(bpattern);</span><br><span class="line">        onPong(strpattern);</span><br><span class="line">      &#125; else &#123;</span><br><span class="line">        throw new JedisException(&quot;Unknown message type: &quot; + firstObj);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; while (isSubscribed());</span><br></pre></td></tr></table></figure>
+
+<p>下面是一个简单的实现发布的订阅模式的代码，github地址：<a target="_blank" rel="noopener" href="https://github.com/wForget/ClientUtil/blob/master/src/main/java/cn/wangz/clientutil/redis/pubsub/PubsubDemo.java">PubsubDemo.java</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line">public class PubsubDemo &#123;</span><br><span class="line"></span><br><span class="line">    private final String ip;</span><br><span class="line">    private final int port;</span><br><span class="line">    private final String channel;</span><br><span class="line">    private final JedisPool jedisPool;</span><br><span class="line"></span><br><span class="line">    public PubsubDemo(String ip, int port, String channel) &#123;</span><br><span class="line">        this.ip = ip;</span><br><span class="line">        this.port = port;</span><br><span class="line">        this.channel = channel;</span><br><span class="line">        JedisPoolConfig config = new JedisPoolConfig();</span><br><span class="line">        jedisPool = new JedisPool(config, ip, port);    // 初始化JedisPool</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * Subscribe 订阅线程</span><br><span class="line">     * 订阅 channel，并打印接收到的消息</span><br><span class="line">     */</span><br><span class="line">    class Subscribe implements Runnable &#123;</span><br><span class="line"></span><br><span class="line">        @Override</span><br><span class="line">        public void run() &#123;</span><br><span class="line">            Jedis jedis = null;</span><br><span class="line">            try &#123;</span><br><span class="line">                jedis = jedisPool.getResource();</span><br><span class="line">                jedis.subscribe(new JedisPubSub() &#123;</span><br><span class="line">                    @Override</span><br><span class="line">                    public void onMessage(String channel, String message) &#123;</span><br><span class="line">                        System.out.println(&quot;receive message[ channel: &quot; + channel + &quot;, message: &quot; + message + &quot;]&quot;);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;, channel);</span><br><span class="line">            &#125; finally &#123;</span><br><span class="line">                if (jedis != null) &#123;</span><br><span class="line">                    jedis.close();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * Publish 发布线程</span><br><span class="line">     * 向 channel 中每秒发送一个递增的数</span><br><span class="line">     */</span><br><span class="line">    class Publish implements Runnable &#123;</span><br><span class="line"></span><br><span class="line">        @Override</span><br><span class="line">        public void run() &#123;</span><br><span class="line">            Jedis jedis = null;</span><br><span class="line">            try &#123;</span><br><span class="line">                jedis = jedisPool.getResource();</span><br><span class="line">                int i = 0;</span><br><span class="line">                while (true) &#123;</span><br><span class="line">                    jedis.publish(channel, String.valueOf(i++));</span><br><span class="line">                    Thread.sleep(1000);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; catch (Exception e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125; finally &#123;</span><br><span class="line">                if (jedis != null) &#123;</span><br><span class="line">                    jedis.close();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 启动方法</span><br><span class="line">    public void run() throws Exception &#123;</span><br><span class="line">        // 启动一个 Subscribe 订阅线程</span><br><span class="line">        Thread subscribeThread = new Thread(new Subscribe(), &quot;SubscribeThread&quot;);</span><br><span class="line">        subscribeThread.start();</span><br><span class="line"></span><br><span class="line">        // 启动一个 Publish 发布线程</span><br><span class="line">        Thread publishThread = new Thread(new Publish(), &quot;PublishThread&quot;);</span><br><span class="line">        publishThread.start();</span><br><span class="line"></span><br><span class="line">        publishThread.join();</span><br><span class="line">        subscribeThread.join();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        final String ip = &quot;192.168.1.153&quot;;</span><br><span class="line">        final int port = 6380;</span><br><span class="line">        final String channel = &quot;testChannel&quot;;</span><br><span class="line"></span><br><span class="line">        PubsubDemo pubsub = new PubsubDemo(ip, port, channel);</span><br><span class="line">        pubsub.run();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Redis/" rel="tag"># Redis</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/10/16/Kafka%E6%A6%82%E8%BF%B0/" rel="next" title="Kafka概述">
+                <i class="fa fa-chevron-left"></i> Kafka概述
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/11/08/Netty%E5%AD%A6%E4%B9%A0/" rel="prev" title="Netty学习">
+                Netty学习 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85"><span class="nav-number">1.</span> <span class="nav-text">Redis 发布订阅</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85%E5%91%BD%E4%BB%A4"><span class="nav-number">2.</span> <span class="nav-text">Redis 发布订阅命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Java-%E5%AE%9E%E7%8E%B0-Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85"><span class="nav-number">3.</span> <span class="nav-text">Java 实现 Redis 发布订阅</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

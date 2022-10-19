@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Kyuubi,Spark,Zorder," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Kyuubi Z-order 调研测试Z-order 是一种将多维数据映射到一维上的排序算法，排序后使得多维数据彼此临近，更有利于数据压缩和查询时 Data Skip。 所谓的 Z-order 优化实际上是在数据写入时添加 Z-order 排序，将数据进行聚类，很好的提升了数据的压缩率和查询性能。 Kyuubi 通过 Spark 插件的形式，实现了 Z-order 优化，具体使用参考：Z-Orde">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kyuubi Zorder 调研测试">
+<meta property="og:url" content="https://wforget.github.io/2022/10/18/Kyuubi-Zorder-%E8%B0%83%E7%A0%94%E6%B5%8B%E8%AF%95/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="Kyuubi Z-order 调研测试Z-order 是一种将多维数据映射到一维上的排序算法，排序后使得多维数据彼此临近，更有利于数据压缩和查询时 Data Skip。 所谓的 Z-order 优化实际上是在数据写入时添加 Z-order 排序，将数据进行聚类，很好的提升了数据的压缩率和查询性能。 Kyuubi 通过 Spark 插件的形式，实现了 Z-order 优化，具体使用参考：Z-Orde">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-10-18T13:18:32.000Z">
+<meta property="article:modified_time" content="2022-10-18T13:20:46.363Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Kyuubi">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="Zorder">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2022/10/18/Kyuubi-Zorder-调研测试/"/>
+
+
+
+
+
+  <title>Kyuubi Zorder 调研测试 | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2022/10/18/Kyuubi-Zorder-%E8%B0%83%E7%A0%94%E6%B5%8B%E8%AF%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Kyuubi Zorder 调研测试</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2022-10-18T21:18:32+08:00">
+                2022-10-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Kyuubi-Z-order-调研测试"><a href="#Kyuubi-Z-order-调研测试" class="headerlink" title="Kyuubi Z-order 调研测试"></a>Kyuubi Z-order 调研测试</h2><p>Z-order 是一种将多维数据映射到一维上的排序算法，排序后使得多维数据彼此临近，更有利于数据压缩和查询时 Data Skip。</p>
+<p>所谓的 Z-order 优化实际上是在数据写入时添加 Z-order 排序，将数据进行聚类，很好的提升了数据的压缩率和查询性能。</p>
+<p>Kyuubi 通过 Spark 插件的形式，实现了 Z-order 优化，具体使用参考：<a target="_blank" rel="noopener" href="https://kyuubi.apache.org/docs/latest/extensions/engines/spark/z-order.html">Z-Ordering Support</a>。</p>
+<p>下面我参考了 Kyuubi 官方文档对 Z-order 功能进行调研测试：<a target="_blank" rel="noopener" href="https://kyuubi.apache.org/docs/latest/extensions/engines/spark/z-order-benchmark.html">Z-order Benchmark</a></p>
+<h2 id="数据准备"><a href="#数据准备" class="headerlink" title="数据准备"></a>数据准备</h2><p>使用 Beeline 连接 Kyuubi，准备测试数据。</p>
+<h3 id="1、创建原始数据表："><a href="#1、创建原始数据表：" class="headerlink" title="1、创建原始数据表："></a>1、创建原始数据表：</h3><p>关闭 AQE ，便于控制输出文件数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// 关闭 AQE</span><br><span class="line">set spark.sql.adaptive.enabled=false;</span><br><span class="line">set spark.sql.shuffle.partitions=200;</span><br></pre></td></tr></table></figure>
+
+<p>创建原始表：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">create table sample.conn_random (</span><br><span class="line">  src_ip string,</span><br><span class="line">  src_port int,</span><br><span class="line">  dst_ip string,</span><br><span class="line">  dst_port int) stored as parquet;</span><br></pre></td></tr></table></figure>
+
+<p>使用 Scala 执行模式生成原始表数据：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">// 切换成 Scala 执行模式</span><br><span class="line">set kyuubi.operation.language=scala;</span><br><span class="line"></span><br><span class="line">import scala.util.Random;</span><br><span class="line">def randomIPv4(r: Random) = Seq.fill(4)(r.nextInt(256)).mkString(&quot;.&quot;);</span><br><span class="line">def randomPort(r: Random) = r.nextInt(65536);</span><br><span class="line"></span><br><span class="line">case class ConnRecord(src_ip: String, src_port: Int, dst_ip: String, dst_port: Int);</span><br><span class="line">def randomConnRecord(r: Random) = ConnRecord(src_ip = randomIPv4(r), src_port = randomPort(r), dst_ip = randomIPv4(r), dst_port = randomPort(r));</span><br><span class="line"></span><br><span class="line">val numRecords = 100 * 1000 * 1000L;</span><br><span class="line">val numFiles = 200;</span><br><span class="line"></span><br><span class="line">val df = spark.range(0, numFiles, 1, numFiles).mapPartitions &#123; it =&gt;</span><br><span class="line">  val partitionID = it.toStream.head</span><br><span class="line">  val r = new Random(seed = partitionID)</span><br><span class="line">  Iterator.fill((numRecords / numFiles).toInt)(randomConnRecord(r))</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">// 创建原始测试数据表 sample.conn_random</span><br><span class="line">df.write.mode(&quot;overwrite&quot;).format(&quot;parquet&quot;).insertInto(&quot;sample.conn_random&quot;);</span><br><span class="line"></span><br><span class="line">// 切换成 SQL 执行模式</span><br><span class="line">spark.sql(&quot;set kyuubi.operation.language=sql&quot;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、生成-Order-by-排序的表："><a href="#2、生成-Order-by-排序的表：" class="headerlink" title="2、生成 Order by 排序的表："></a>2、生成 Order by 排序的表：</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">// conn_order_only_ip</span><br><span class="line">create table sample.conn_order_only_ip like sample.conn_random;</span><br><span class="line">INSERT overwrite sample.conn_order_only_ip select * from sample.conn_random order by src_ip, dst_ip;</span><br><span class="line"></span><br><span class="line">// conn_order</span><br><span class="line">create table sample.conn_order like sample.conn_random;</span><br><span class="line">INSERT overwrite sample.conn_order select * from sample.conn_random order by src_ip, src_port, dst_ip, dst_port;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、生成-Z-order-优化的表："><a href="#2、生成-Z-order-优化的表：" class="headerlink" title="2、生成 Z-order 优化的表："></a>2、生成 Z-order 优化的表：</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">// conn_zorder_only_ip</span><br><span class="line">create table sample.conn_zorder_only_ip like sample.conn_random;</span><br><span class="line">insert overwrite sample.conn_zorder_only_ip select * from sample.conn_random;</span><br><span class="line">OPTIMIZE sample.conn_zorder_only_ip ZORDER BY src_ip, dst_ip;</span><br><span class="line"></span><br><span class="line">// conn_zorder</span><br><span class="line">create table sample.conn_zorder like sample.conn_random;</span><br><span class="line">insert overwrite sample.conn_zorder select * from sample.conn_random;</span><br><span class="line">OPTIMIZE sample.conn_zorder ZORDER BY src_ip, src_port, dst_ip, dst_port;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Zorder-优化效果对比分析"><a href="#Zorder-优化效果对比分析" class="headerlink" title="Zorder 优化效果对比分析"></a>Zorder 优化效果对比分析</h2><h3 id="1、存储分析"><a href="#1、存储分析" class="headerlink" title="1、存储分析"></a>1、存储分析</h3><table>
+<thead>
+<tr>
+<th>表名</th>
+<th>大小</th>
+<th>生成时间</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>conn_random</td>
+<td>2.7 G</td>
+<td>1.1 min</td>
+</tr>
+<tr>
+<td>conn_order_only_ip</td>
+<td>2.2 G</td>
+<td>1.3 min</td>
+</tr>
+<tr>
+<td>conn_order</td>
+<td>2.2 G</td>
+<td>52 s</td>
+</tr>
+<tr>
+<td>conn_zorder_only_ip</td>
+<td>1510.3 MiB</td>
+<td>1.9 min</td>
+</tr>
+<tr>
+<td>conn_zorder</td>
+<td>1510.4 MiB</td>
+<td>1.9 min</td>
+</tr>
+</tbody></table>
+<h3 id="2、查询分析"><a href="#2、查询分析" class="headerlink" title="2、查询分析"></a>2、查询分析</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// query</span><br><span class="line">select count(*) from sample.conn_random where src_ip like &#x27;157%&#x27; and dst_ip like &#x27;216.%&#x27;;</span><br><span class="line">select count(*) from sample.conn_order_only_ip where src_ip like &#x27;157%&#x27; and dst_ip like &#x27;216.%&#x27;;</span><br><span class="line">select count(*) from sample.conn_order where src_ip like &#x27;157%&#x27; and dst_ip like &#x27;216.%&#x27;;</span><br><span class="line">select count(*) from sample.conn_zorder_only_ip where src_ip like &#x27;157%&#x27; and dst_ip like &#x27;216.%&#x27;;</span><br><span class="line">select count(*) from sample.conn_zorder where src_ip like &#x27;157%&#x27; and dst_ip like &#x27;216.%&#x27;;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>表名</th>
+<th>扫描数据量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>conn_random</td>
+<td>100,000,000</td>
+</tr>
+<tr>
+<td>conn_order_only_ip</td>
+<td>400,000</td>
+</tr>
+<tr>
+<td>conn_order</td>
+<td>400,648</td>
+</tr>
+<tr>
+<td>conn_zorder_only_ip</td>
+<td>120,000</td>
+</tr>
+<tr>
+<td>conn_zorder</td>
+<td>120,000</td>
+</tr>
+</tbody></table>
+<h3 id="3、总结"><a href="#3、总结" class="headerlink" title="3、总结"></a>3、总结</h3><p>从上面的测试结果中可以很直观的看到 Z-order 优化的一些特点：</p>
+<ul>
+<li><strong>排序消耗</strong>：由于需要对数据进行排序，所以对于数据生产任务有少许额为的排序消耗。</li>
+<li><strong>减少空间</strong>：数据进行了聚类，使得相邻数据有很高的相似性，大幅提高数据压缩率，减少存储空间。</li>
+<li><strong>提高查询性能</strong>：数据临近也让 RowGroup 数据范围比较小，加大了查询时 Data skip 效果，减少扫描的数据量，提升查询性能。</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Kyuubi/" rel="tag"># Kyuubi</a>
+          
+            <a href="/tags/Spark/" rel="tag"># Spark</a>
+          
+            <a href="/tags/Zorder/" rel="tag"># Zorder</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2022/07/17/Kyuubi-%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90%E6%B7%B7%E5%90%88%E8%AE%A1%E7%AE%97/" rel="next" title="Kyuubi 多数据源混合计算">
+                <i class="fa fa-chevron-left"></i> Kyuubi 多数据源混合计算
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Kyuubi-Z-order-%E8%B0%83%E7%A0%94%E6%B5%8B%E8%AF%95"><span class="nav-number">1.</span> <span class="nav-text">Kyuubi Z-order 调研测试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%87%86%E5%A4%87"><span class="nav-number">2.</span> <span class="nav-text">数据准备</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E5%88%9B%E5%BB%BA%E5%8E%9F%E5%A7%8B%E6%95%B0%E6%8D%AE%E8%A1%A8%EF%BC%9A"><span class="nav-number">2.1.</span> <span class="nav-text">1、创建原始数据表：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E7%94%9F%E6%88%90-Order-by-%E6%8E%92%E5%BA%8F%E7%9A%84%E8%A1%A8%EF%BC%9A"><span class="nav-number">2.2.</span> <span class="nav-text">2、生成 Order by 排序的表：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E7%94%9F%E6%88%90-Z-order-%E4%BC%98%E5%8C%96%E7%9A%84%E8%A1%A8%EF%BC%9A"><span class="nav-number">2.3.</span> <span class="nav-text">2、生成 Z-order 优化的表：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zorder-%E4%BC%98%E5%8C%96%E6%95%88%E6%9E%9C%E5%AF%B9%E6%AF%94%E5%88%86%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">Zorder 优化效果对比分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E5%AD%98%E5%82%A8%E5%88%86%E6%9E%90"><span class="nav-number">3.1.</span> <span class="nav-text">1、存储分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E6%9F%A5%E8%AF%A2%E5%88%86%E6%9E%90"><span class="nav-number">3.2.</span> <span class="nav-text">2、查询分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">3.3.</span> <span class="nav-text">3、总结</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Kyuubi,Spark," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Kyuubi 多数据源混合计算Apache Kyuubi 作为一个分布式和多租户网关，用于在 Lakehouse 上提供 Serverless SQL。借助于 Spark 引擎完整的生态，我们可以接入各种数据源，实现各种数据源的混合计算，以及不同数据源之间的数据同步。第三方数据源通过实现 Spark DataSource 相关接口，提供 Spark Connector 依赖包来与 Spark 对接">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kyuubi 多数据源混合计算">
+<meta property="og:url" content="https://wforget.github.io/2022/07/17/Kyuubi-%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90%E6%B7%B7%E5%90%88%E8%AE%A1%E7%AE%97/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="Kyuubi 多数据源混合计算Apache Kyuubi 作为一个分布式和多租户网关，用于在 Lakehouse 上提供 Serverless SQL。借助于 Spark 引擎完整的生态，我们可以接入各种数据源，实现各种数据源的混合计算，以及不同数据源之间的数据同步。第三方数据源通过实现 Spark DataSource 相关接口，提供 Spark Connector 依赖包来与 Spark 对接">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-07-17T03:44:43.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.788Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Kyuubi">
+<meta property="article:tag" content="Spark">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2022/07/17/Kyuubi-多数据源混合计算/"/>
+
+
+
+
+
+  <title>Kyuubi 多数据源混合计算 | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2022/07/17/Kyuubi-%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90%E6%B7%B7%E5%90%88%E8%AE%A1%E7%AE%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Kyuubi 多数据源混合计算</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2022-07-17T11:44:43+08:00">
+                2022-07-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Kyuubi-多数据源混合计算"><a href="#Kyuubi-多数据源混合计算" class="headerlink" title="Kyuubi 多数据源混合计算"></a>Kyuubi 多数据源混合计算</h2><p>Apache Kyuubi 作为一个分布式和多租户网关，用于在 Lakehouse 上提供 Serverless SQL。<br>借助于 Spark 引擎完整的生态，我们可以接入各种数据源，实现<strong>各种数据源的混合计算</strong>，以及<strong>不同数据源之间的数据同步</strong>。<br>第三方数据源通过实现 Spark DataSource 相关接口，提供 Spark Connector 依赖包来与 Spark 对接。Spark SQL 中可通过 <code>DataSource</code> 或 <code>Catalog</code> 的方式来定义数据源，进而通过 Spark SQL 读写数据源数据。</p>
+<h3 id="DataSource"><a href="#DataSource" class="headerlink" title="DataSource"></a>DataSource</h3><p>Spark SQL 可使用 DataSource  配置，创建一个数据源的临时视图。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># 从 JSON 文件创建一个临时视图</span><br><span class="line">CREATE TEMPORARY VIEW jsonTable</span><br><span class="line">USING org.apache.spark.sql.json</span><br><span class="line">OPTIONS (</span><br><span class="line">  path &#x27;examples/src/main/resources/people.json&#x27;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># 查询定义的临时视图</span><br><span class="line">SELECT * FROM jsonTable</span><br></pre></td></tr></table></figure>
+
+<h3 id="Catalog"><a href="#Catalog" class="headerlink" title="Catalog"></a>Catalog</h3><p>Spark 3 提供 CatalogPlugin 接口，可以为数据源实现自定义的 Catalog，通过相关配置加载数据源的 Catalog，进而访问该数据源的数据。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># 定义一个名称为 test 的 catalog，catalog_class 为 CatalogPlugin 的实现类</span><br><span class="line">spark.sql.catalog.test  catalog_class</span><br><span class="line"></span><br><span class="line"># 配置 test catalog 的 options</span><br><span class="line">spark.sql.catalog.test.optKey1  optValue1</span><br><span class="line">spark.sql.catalog.test.optKey2  optValue2</span><br><span class="line"></span><br><span class="line"># 通过 `test.db.table` 访问自定义 catalog 下的库表</span><br><span class="line">select * from test.db.table</span><br></pre></td></tr></table></figure>
+
+<h2 id="Spark-SQL-连接各种数据源"><a href="#Spark-SQL-连接各种数据源" class="headerlink" title="Spark SQL 连接各种数据源"></a>Spark SQL 连接各种数据源</h2><h3 id="HDFS"><a href="#HDFS" class="headerlink" title="HDFS"></a>HDFS</h3><p>Spark SQL 中默认只能加载一个 Hive 集群配置，对于有跨集群访问 Hive 的需求，我们可以使用文件类型的数据源，定义其它集群的 HDFS 路径，跨集群的操作 Hive 数据。</p>
+<p>Spark 内置了一些文件类型的数据源，可以用于读写 HDFS 文件，如：Parquet、ORC、JSON、CSV 等，不需要额外的依赖。</p>
+<p>对于开启了 Kerberos 认证的集群，需要使用 <code>kyuubi.credentials.hadoopfs.uris</code> 配置跨集群访问的 Hadoop FileSystems。不过目前这个参数是 Kyuubi Server 的参数，运行时不可修改，后续可以进优化。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kyuubi.credentials.hadoopfs.uris=hdfs://192.168.1.199</span><br></pre></td></tr></table></figure>
+
+<p>通过 DataSource 方式访问 HDFS：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TEMPORARY VIEW parquetTable</span><br><span class="line">USING org.apache.spark.sql.parquet</span><br><span class="line">OPTIONS (</span><br><span class="line">  path &#x27;hdfs://192.168.1.199/user/hadoop/test/people.parquet&#x27;</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">select * from parquetTable limit 10;</span><br></pre></td></tr></table></figure>
+
+<h3 id="JDBC"><a href="#JDBC" class="headerlink" title="JDBC"></a>JDBC</h3><p>Spark 内置了 JDBC 的 DataSource 和 Catalog 实现，仅需要添加 JDBC Driver 依赖（我们 Spark jars 中添加了 MySQL Driver，所以不需要额外引入）。</p>
+<p>通过 DataSource 方式访问 MySQL：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">CREATE TEMPORARY VIEW jdbcTable</span><br><span class="line">USING org.apache.spark.sql.jdbc</span><br><span class="line">OPTIONS (</span><br><span class="line">  url &#x27;jdbc:mysql://192.168.1.199:3306/database&#x27;,</span><br><span class="line">  dbtable &#x27;database.tablename&#x27;,</span><br><span class="line">  user &#x27;username&#x27;,</span><br><span class="line">  password &#x27;password&#x27;</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>通过 CatalogPlugin 方式访问 MySQL：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">set spark.sql.catalog.mysql=org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;</span><br><span class="line">set spark.sql.catalog.mysql.url=jdbc:mysql://192.168.1.199/database;</span><br><span class="line">set spark.sql.catalog.mysql.user=username;</span><br><span class="line">set spark.sql.catalog.mysql.password=password;</span><br><span class="line"></span><br><span class="line">use database;</span><br><span class="line">select * from tablename;</span><br></pre></td></tr></table></figure>
+
+<h3 id="HBase"><a href="#HBase" class="headerlink" title="HBase"></a>HBase</h3><p>使用 HBase Spark Connector 组件：<a target="_blank" rel="noopener" href="https://github.com/apache/hbase-connectors">hbase-connectors</a></p>
+<p>HBase Shell 创建测试表：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">create &#x27;wangzhen_test&#x27;, &#x27;cf&#x27;</span><br><span class="line">put &#x27;wangzhen_test&#x27;, &#x27;row1&#x27;, &#x27;cf:a&#x27;, &#x27;value1&#x27;</span><br><span class="line">scan &#x27;wangzhen_test&#x27;</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://github.com/apache/hbase-connectors">hbase-connectors</a> 没有提供打入依赖的 shade 包，使用 maven-shade-plugin 插件制作完整的 shade 包便于添加 HBase Spark Connector 依赖，可以排除 Hadoop、Spark 等 provided 依赖包仅需要 HBase Client 相关依赖。<br>运行时可通过 <code>add jars</code> 命令加入依赖：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 添加 HBase Spark Connector 依赖</span><br><span class="line">add jars &quot;hdfs://XXX/user/hadoop/jars/hbase-spark-1.0.1-SNAPSHOT.jar&quot;;</span><br></pre></td></tr></table></figure>
+
+<p>通过 DataSource 方式访问 HBase：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># 创建 HBase 表临时视图：</span><br><span class="line">CREATE TEMPORARY VIEW hbaseTable</span><br><span class="line">USING org.apache.hadoop.hbase.spark</span><br><span class="line">OPTIONS (</span><br><span class="line">  &#x27;catalog&#x27; &#x27;&#123;&quot;table&quot;:&#123;&quot;namespace&quot;:&quot;default&quot;, &quot;name&quot;:&quot;wangzhen_test&quot;&#125;, &quot;rowkey&quot;:&quot;key1&quot;, &quot;columns&quot;:&#123;&quot;col1&quot;:&#123;&quot;cf&quot;:&quot;rowkey&quot;, &quot;col&quot;:&quot;key1&quot;, &quot;type&quot;:&quot;string&quot;&#125;, &quot;col2&quot;:&#123;&quot;cf&quot;:&quot;cf&quot;, &quot;col&quot;:&quot;a&quot;, &quot;type&quot;:&quot;string&quot;&#125;&#125;&#125;&#x27;,</span><br><span class="line">  &#x27;hbase.spark.config.location&#x27; &#x27;hbase-site.xml&#x27;,</span><br><span class="line">  &#x27;hbase.spark.use.hbasecontext&#x27; &#x27;false&#x27;</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"># 读取 HBase 数据</span><br><span class="line">select * from hbaseTable;</span><br></pre></td></tr></table></figure>
+
+<p>我们使用 Impersonation 模式运行 Kyuubi 服务，在 Kyuubi Server 中使用代理用户启动 Spark 引擎，Kyuubi Server 默认仅实现了获取 HDFS 和 Hive 的 Delegation Token。<br>我们 HBase 集群也开启了 Kerberos 认证，测试时通过指定 <code>spark.kerberos.keytab</code> 和 <code>spark.kerberos.principal</code> 方式运行 Spark Engine，后续需要在 Kyuubi Server 中实现 <code>HBaseDelegationTokenProvider</code> 来获取 HBase 的 Token。</p>
+<h3 id="ClickHouse"><a href="#ClickHouse" class="headerlink" title="ClickHouse"></a>ClickHouse</h3><p>ClickHouse 提供了 JDBC 客户端，可以使用 Spark JDBC 的方式连接 ClickHouse。</p>
+<p>另外开源的 <a target="_blank" rel="noopener" href="https://github.com/housepower/spark-clickhouse-connector">spark-clickhouse-connector</a> 组件，实现了 Spark ClickHouse Connector ，相对于 JDBC 的方式有更好的分区逻辑和更多的优化，对于读取操作应该有很好的性能提升，需要注意的是 spark-clickhouse-connector 是通过 GRPC 接口访问 ClickHouse 集群。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/housepower/spark-clickhouse-connector">spark-clickhouse-connector</a> 组件默认没有提供 Spark3.1的支持，我们通过复制 Spark3.3 实现的代码，简单的调整后测试可用。</p>
+<p>使用 spark-clickhouse-connector 的 CatalogPlugin 方式访问 ClickHouse：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># 添加 spark-clickhouse-connector 依赖</span><br><span class="line">add jars &#x27;hdfs://XXX/user/hadoop/jars/clickhouse-spark-runtime-3.1_2.12-0.4.0-SNAPSHOT.jar&#x27;;</span><br><span class="line"></span><br><span class="line"># 配置 clickhouse catalog</span><br><span class="line">set spark.sql.catalog.clickhouse=xenon.clickhouse.ClickHouseCatalog;</span><br><span class="line">set spark.sql.catalog.clickhouse.host=192.168.1.199;</span><br><span class="line">set spark.sql.catalog.clickhouse.grpc_port=9100;</span><br><span class="line">set spark.sql.catalog.clickhouse.user=username;</span><br><span class="line">set spark.sql.catalog.clickhouse.password=password;</span><br><span class="line">set spark.sql.catalog.clickhouse.database=database;</span><br><span class="line"></span><br><span class="line"># 查询 clickhouse 数据</span><br><span class="line">use clickhouse;</span><br><span class="line">select * from tablename;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Kyuubi/" rel="tag"># Kyuubi</a>
+          
+            <a href="/tags/Spark/" rel="tag"># Spark</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2022/06/04/Kyuubi-%E4%BC%98%E5%8C%96%E5%B0%8F%E6%96%87%E4%BB%B6/" rel="next" title="Kyuubi 优化小文件">
+                <i class="fa fa-chevron-left"></i> Kyuubi 优化小文件
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2022/10/18/Kyuubi-Zorder-%E8%B0%83%E7%A0%94%E6%B5%8B%E8%AF%95/" rel="prev" title="Kyuubi Zorder 调研测试">
+                Kyuubi Zorder 调研测试 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Kyuubi-%E5%A4%9A%E6%95%B0%E6%8D%AE%E6%BA%90%E6%B7%B7%E5%90%88%E8%AE%A1%E7%AE%97"><span class="nav-number">1.</span> <span class="nav-text">Kyuubi 多数据源混合计算</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DataSource"><span class="nav-number">1.1.</span> <span class="nav-text">DataSource</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Catalog"><span class="nav-number">1.2.</span> <span class="nav-text">Catalog</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Spark-SQL-%E8%BF%9E%E6%8E%A5%E5%90%84%E7%A7%8D%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number">2.</span> <span class="nav-text">Spark SQL 连接各种数据源</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#HDFS"><span class="nav-number">2.1.</span> <span class="nav-text">HDFS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JDBC"><span class="nav-number">2.2.</span> <span class="nav-text">JDBC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HBase"><span class="nav-number">2.3.</span> <span class="nav-text">HBase</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ClickHouse"><span class="nav-number">2.4.</span> <span class="nav-text">ClickHouse</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Spark问题分析," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Spark HiveMetastoreCatalog Infer Schema问题一说明报错显示读取 Parquet footer 错误，不过所读取的文件不是查询条件指定的分区。 1234567891011121314151617181920212223242526272829303132333435Driver stacktrace:	at org.apache.spark.scheduler.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark HiveMetastoreCatalog Infer Schema">
+<meta property="og:url" content="https://wforget.github.io/2020/09/17/Spark-HiveMetastoreCatalog-Infer-Schema/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="Spark HiveMetastoreCatalog Infer Schema问题一说明报错显示读取 Parquet footer 错误，不过所读取的文件不是查询条件指定的分区。 1234567891011121314151617181920212223242526272829303132333435Driver stacktrace:	at org.apache.spark.scheduler.">
+<meta property="og:locale">
+<meta property="article:published_time" content="2020-09-17T13:34:07.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.806Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Spark问题分析">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2020/09/17/Spark-HiveMetastoreCatalog-Infer-Schema/"/>
+
+
+
+
+
+  <title>Spark HiveMetastoreCatalog Infer Schema | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2020/09/17/Spark-HiveMetastoreCatalog-Infer-Schema/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Spark HiveMetastoreCatalog Infer Schema</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-09-17T21:34:07+08:00">
+                2020-09-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Spark-HiveMetastoreCatalog-Infer-Schema"><a href="#Spark-HiveMetastoreCatalog-Infer-Schema" class="headerlink" title="Spark HiveMetastoreCatalog Infer Schema"></a>Spark HiveMetastoreCatalog Infer Schema</h2><h3 id="问题一"><a href="#问题一" class="headerlink" title="问题一"></a>问题一</h3><h4 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h4><p>报错显示读取 Parquet footer 错误，不过所读取的文件不是查询条件指定的分区。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">Driver stacktrace:</span><br><span class="line">	at org.apache.spark.scheduler.DAGScheduler.org$apache$spark$scheduler$DAGScheduler$$failJobAndIndependentStages(DAGScheduler.scala:1889)</span><br><span class="line">	......</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$.mergeSchemasInParallel(ParquetFileFormat.scala:633)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat.inferSchema(ParquetFileFormat.scala:241)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog.org$apache$spark$sql$hive$HiveMetastoreCatalog$$inferIfNeeded(HiveMetastoreCatalog.scala:239)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog$$anonfun$4$$anonfun$5.apply(HiveMetastoreCatalog.scala:167)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog$$anonfun$4$$anonfun$5.apply(HiveMetastoreCatalog.scala:156)</span><br><span class="line">	at scala.Option.getOrElse(Option.scala:121)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog$$anonfun$4.apply(HiveMetastoreCatalog.scala:156)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog$$anonfun$4.apply(HiveMetastoreCatalog.scala:148)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog.withTableCreationLock(HiveMetastoreCatalog.scala:54)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog.convertToLogicalRelation(HiveMetastoreCatalog.scala:148)</span><br><span class="line">	at org.apache.spark.sql.hive.RelationConversions.org$apache$spark$sql$hive$RelationConversions$$convert(HiveStrategies.scala:207)</span><br><span class="line">	at org.apache.spark.sql.hive.RelationConversions$$anonfun$apply$4.applyOrElse(HiveStrategies.scala:239)</span><br><span class="line">	at org.apache.spark.sql.hive.RelationConversions$$anonfun$apply$4.applyOrElse(HiveStrategies.scala:228)</span><br><span class="line">	at ......</span><br><span class="line">Caused by: org.apache.spark.SparkException: Exception thrown in awaitResult: </span><br><span class="line">	at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:226)</span><br><span class="line">	at org.apache.spark.util.ThreadUtils$.parmap(ThreadUtils.scala:290)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$.readParquetFootersInParallel(ParquetFileFormat.scala:538)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$$anonfun$9.apply(ParquetFileFormat.scala:611)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$$anonfun$9.apply(ParquetFileFormat.scala:603)</span><br><span class="line">	at ......</span><br><span class="line">Caused by: java.io.IOException: Could not read footer for file: FileStatus&#123;path=hdfs://hadoop-bdwg-ns01/hive/warehouse/cupid_bi.db/report_qixiao_tracking_event_count_daily/dt=2016-05-24/000000_0.gz; isDirectory=false; length=1191537; replication=0; blocksize=0; modification_time=0; access_time=0; owner=; group=; permission=rw-rw-rw-; isSymlink=false&#125;</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$$anonfun$readParquetFootersInParallel$1.apply(ParquetFileFormat.scala:551)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$$anonfun$readParquetFootersInParallel$1.apply(ParquetFileFormat.scala:538)</span><br><span class="line">	at ......</span><br><span class="line">Caused by: java.lang.RuntimeException: hdfs://hadoop-bdwg-ns01/hive/warehouse/cupid_bi.db/report_qixiao_tracking_event_count_daily/dt=2016-05-24/000000_0.gz is not a Parquet file. expected magic number at tail [80, 65, 82, 49] but found [78, 59, 23, 1]</span><br><span class="line">	at org.apache.parquet.hadoop.ParquetFileReader.readFooter(ParquetFileReader.java:524)</span><br><span class="line">	at org.apache.parquet.hadoop.ParquetFileReader.readFooter(ParquetFileReader.java:505)</span><br><span class="line">	at org.apache.parquet.hadoop.ParquetFileReader.readFooter(ParquetFileReader.java:499)</span><br><span class="line">	at org.apache.parquet.hadoop.ParquetFileReader.readFooter(ParquetFileReader.java:476)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat$$anonfun$readParquetFootersInParallel$1.apply(ParquetFileFormat.scala:544)</span><br><span class="line">	... 9 more</span><br></pre></td></tr></table></figure>
+
+<h4 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h4><p>关键信息：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat.inferSchema(ParquetFileFormat.scala:241)</span><br><span class="line">org.apache.spark.sql.hive.HiveMetastoreCatalog.org$apache$spark$sql$hive$HiveMetastoreCatalog$$inferIfNeeded(HiveMetastoreCatalog.scala:239)</span><br></pre></td></tr></table></figure>
+
+<p>通过对错误栈进行代码分析，锁定 ParquetFileFormat.inferSchema 和 HiveMetastoreCatalog.inferIfNeeded 两个方法。发现错误是发生在 Parquet 文件的 Schema 推断中。</p>
+<h3 id="问题二"><a href="#问题二" class="headerlink" title="问题二"></a>问题二</h3><h4 id="说明-1"><a href="#说明-1" class="headerlink" title="说明"></a>说明</h4><p>Driver 连接不上，像是卡住了，然后就直接退出，查询Application日志没有错误日志，查看Executor 的日志显示 java.io.IOException: Connection reset by peer</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Application application_1574672087080_11986014 failed 1 times due to ApplicationMaster for attempt appattempt_1574672087080_11986014_000001 timed out. Failing the application.</span><br></pre></td></tr></table></figure>
+
+<h4 id="排查-1"><a href="#排查-1" class="headerlink" title="排查"></a>排查</h4><p>这个错误没有什么关键的错误信息，一般看到 Connection reset by peer（连接被重置）错误和 timed out 错误，想到调整超时时间，设置参数： <strong>spark.network.timeout&#x3D;1200s</strong>，不过发现并没有用，还没有达到此时间就报错了。</p>
+<p>查看 ApplicationMaster 所在的机器，对 ApplicationMaster（Driver） 的线程栈进行分析，jstack 打印线程栈信息，发现关键信息如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">&quot;Driver&quot; #38 prio=5 os_prio=0 tid=0x00002b504f82a000 nid=0x78b0 runnable [0x00002b50809a9000]</span><br><span class="line">   java.lang.Thread.State: RUNNABLE</span><br><span class="line">	at java.lang.String.indexOf(String.java:1769)</span><br><span class="line">	at java.lang.String.indexOf(String.java:1718)</span><br><span class="line">	at org.apache.commons.lang.StringUtils.replace(StringUtils.java:3807)</span><br><span class="line">	at org.apache.commons.lang.StringUtils.replace(StringUtils.java:3771)</span><br><span class="line">	at org.apache.hadoop.fs.Path.normalizePath(Path.java:240)</span><br><span class="line">	at org.apache.hadoop.fs.Path.initialize(Path.java:203)</span><br><span class="line">	at org.apache.hadoop.fs.Path.&lt;init&gt;(Path.java:172)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.InMemoryFileIndex$$anonfun$bulkListLeafFiles$3$$anonfun$7.apply(InMemoryFileIndex.scala:251)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.InMemoryFileIndex$$anonfun$bulkListLeafFiles$3$$anonfun$7.apply(InMemoryFileIndex.scala:244)</span><br><span class="line">	at scala.collection.TraversableLike$$anonfun$map$1.apply(TraversableLike.scala:234)</span><br><span class="line">	at scala.collection.TraversableLike$$anonfun$map$1.apply(TraversableLike.scala:234)</span><br><span class="line">	at scala.collection.mutable.ResizableArray$class.foreach(ResizableArray.scala:59)</span><br><span class="line">	at scala.collection.mutable.ArrayBuffer.foreach(ArrayBuffer.scala:48)</span><br><span class="line">	at scala.collection.TraversableLike$class.map(TraversableLike.scala:234)</span><br><span class="line">	at scala.collection.AbstractTraversable.map(Traversable.scala:104)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.InMemoryFileIndex$$anonfun$bulkListLeafFiles$3.apply(InMemoryFileIndex.scala:244)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.InMemoryFileIndex$$anonfun$bulkListLeafFiles$3.apply(InMemoryFileIndex.scala:243)</span><br><span class="line">	at scala.collection.TraversableLike$$anonfun$map$1.apply(TraversableLike.scala:234)</span><br><span class="line">	at scala.collection.TraversableLike$$anonfun$map$1.apply(TraversableLike.scala:234)</span><br><span class="line">	at scala.collection.IndexedSeqOptimized$class.foreach(IndexedSeqOptimized.scala:33)</span><br><span class="line">	at scala.collection.mutable.ArrayOps$ofRef.foreach(ArrayOps.scala:186)</span><br><span class="line">	at scala.collection.TraversableLike$class.map(TraversableLike.scala:234)</span><br><span class="line">	at scala.collection.mutable.ArrayOps$ofRef.map(ArrayOps.scala:186)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.InMemoryFileIndex$.bulkListLeafFiles(InMemoryFileIndex.scala:243)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.InMemoryFileIndex.listLeafFiles(InMemoryFileIndex.scala:126)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.InMemoryFileIndex.refresh0(InMemoryFileIndex.scala:91)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.InMemoryFileIndex.&lt;init&gt;(InMemoryFileIndex.scala:67)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.PrunedInMemoryFileIndex.&lt;init&gt;(CatalogFileIndex.scala:118)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.CatalogFileIndex.filterPartitions(CatalogFileIndex.scala:84)</span><br><span class="line">	at org.apache.spark.sql.execution.datasources.CatalogFileIndex.listFiles(CatalogFileIndex.scala:59)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog.org$apache$spark$sql$hive$HiveMetastoreCatalog$$inferIfNeeded(HiveMetastoreCatalog.scala:242)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog$$anonfun$4$$anonfun$5.apply(HiveMetastoreCatalog.scala:167)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog$$anonfun$4$$anonfun$5.apply(HiveMetastoreCatalog.scala:156)</span><br><span class="line">	at scala.Option.getOrElse(Option.scala:121)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog$$anonfun$4.apply(HiveMetastoreCatalog.scala:156)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog$$anonfun$4.apply(HiveMetastoreCatalog.scala:148)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog.withTableCreationLock(HiveMetastoreCatalog.scala:54)</span><br><span class="line">	at org.apache.spark.sql.hive.HiveMetastoreCatalog.convertToLogicalRelation(HiveMetastoreCatalog.scala:148)</span><br><span class="line">	at org.apache.spark.sql.hive.RelationConversions.org$apache$spark$sql$hive$RelationConversions$$convert(HiveStrategies.scala:207)</span><br><span class="line">	at ......</span><br></pre></td></tr></table></figure>
+
+<p>根据问题一中的经验，查询 InMemoryFileIndex 日志，发现 InMemoryFileIndex 扫描两万多目录。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">InMemoryFileIndex: Listing leaf files and directories in parallel under: hdfs://.....</span><br></pre></td></tr></table></figure>
+
+<h3 id="问题解决"><a href="#问题解决" class="headerlink" title="问题解决"></a>问题解决</h3><p>查看 org.apache.spark.sql.hive.HiveMetastoreCatalog#inferIfNeeded 代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">private def inferIfNeeded(</span><br><span class="line">     relation: HiveTableRelation,</span><br><span class="line">     options: Map[String, String],</span><br><span class="line">     fileFormat: FileFormat,</span><br><span class="line">     fileIndexOpt: Option[FileIndex] = None): CatalogTable = &#123;</span><br><span class="line">   val inferenceMode = sparkSession.sessionState.conf.caseSensitiveInferenceMode</span><br><span class="line">   val shouldInfer = (inferenceMode != NEVER_INFER) &amp;&amp; !relation.tableMeta.schemaPreservesCase</span><br><span class="line">   val tableName = relation.tableMeta.identifier.unquotedString</span><br><span class="line">   if (shouldInfer) &#123;</span><br><span class="line">     logInfo(s&quot;Inferring case-sensitive schema for table $tableName (inference mode: &quot; +</span><br><span class="line">       s&quot;$inferenceMode)&quot;)</span><br><span class="line">     val fileIndex = fileIndexOpt.getOrElse &#123;</span><br><span class="line">       val rootPath = new Path(relation.tableMeta.location)</span><br><span class="line">       new InMemoryFileIndex(sparkSession, Seq(rootPath), options, None)</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     val inferredSchema = fileFormat</span><br><span class="line">       .inferSchema(</span><br><span class="line">         sparkSession,</span><br><span class="line">         options,</span><br><span class="line">         fileIndex.listFiles(Nil, Nil).flatMap(_.files))</span><br><span class="line">       .map(mergeWithMetastoreSchema(relation.tableMeta.dataSchema, _))</span><br><span class="line"></span><br><span class="line">     inferredSchema match &#123;</span><br><span class="line">       case Some(dataSchema) =&gt;</span><br><span class="line">         if (inferenceMode == INFER_AND_SAVE) &#123;</span><br><span class="line">           updateDataSchema(relation.tableMeta.identifier, dataSchema)</span><br><span class="line">         &#125;</span><br><span class="line">         val newSchema = StructType(dataSchema ++ relation.tableMeta.partitionSchema)</span><br><span class="line">         relation.tableMeta.copy(schema = newSchema)</span><br><span class="line">       case None =&gt;</span><br><span class="line">         logWarning(s&quot;Unable to infer schema for table $tableName from file format &quot; +</span><br><span class="line">           s&quot;$fileFormat (inference mode: $inferenceMode). Using metastore schema.&quot;)</span><br><span class="line">         relation.tableMeta</span><br><span class="line">     &#125;</span><br><span class="line">   &#125; else &#123;</span><br><span class="line">     relation.tableMeta</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>shouldInfer 变量为 true 时会进行 Schema 推断，那么如何设置让它不进行推断呢？有下面两种情况：</p>
+<ol>
+<li>设置 <strong>spark.sql.hive.caseSensitiveInferenceMode&#x3D;NEVER_INFER</strong></li>
+<li>schemaPreservesCase 为 true 时也跳过 infer schema，需要 Hive 表有 <strong>spark.sql.sources.schema.*</strong> 相关配置，并且 schema 和 table.schema 相等（相关判断在org.apache.spark.sql.hive.HiveExternalCatalog#restoreHiveSerdeTable里面）。</li>
+</ol>
+<p>后面选择设置 <strong>spark.sql.hive.caseSensitiveInferenceMode&#x3D;NEVER_INFER</strong>，关闭 Schema 推断解决问题。在 Spark3.0 中已经将此配置默认设置为 NEVER_INFER。</p>
+<h3 id="相关说明"><a href="#相关说明" class="headerlink" title="相关说明"></a>相关说明</h3><ol>
+<li><p>为何有 Schema 推断<br>由于 Hive Schema 是不区分大小写，Parquet 文件的 Schema 是区分大小写的，读取有大小名称的 Parquet 文件时可能会导致结果有问题。</p>
+</li>
+<li><p>caseSensitiveInferenceMode 的三种模式说明<br>caseSensitiveInferenceMode 有三种模式<br>INFER_AND_SAVE：此模式会在第一次进行Schema推断，然后保持到Hive表的properties里面（spark.sql.sources.schema.*）。<br>INFER_ONLY：进行推断，不会保持<br>NEVER_INFER：不进行推断</p>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Spark%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/" rel="tag"># Spark问题分析</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/06/08/Apache-Atlas-%E5%85%83%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86/" rel="next" title="Apache Atlas 元数据管理">
+                <i class="fa fa-chevron-left"></i> Apache Atlas 元数据管理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/09/18/SQL%E8%A7%A3%E6%9E%90%E7%B3%BB%E5%88%97/" rel="prev" title="SQL解析系列">
+                SQL解析系列 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Spark-HiveMetastoreCatalog-Infer-Schema"><span class="nav-number">1.</span> <span class="nav-text">Spark HiveMetastoreCatalog Infer Schema</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E4%B8%80"><span class="nav-number">1.1.</span> <span class="nav-text">问题一</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%B4%E6%98%8E"><span class="nav-number">1.1.1.</span> <span class="nav-text">说明</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8E%92%E6%9F%A5"><span class="nav-number">1.1.2.</span> <span class="nav-text">排查</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E4%BA%8C"><span class="nav-number">1.2.</span> <span class="nav-text">问题二</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%B4%E6%98%8E-1"><span class="nav-number">1.2.1.</span> <span class="nav-text">说明</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8E%92%E6%9F%A5-1"><span class="nav-number">1.2.2.</span> <span class="nav-text">排查</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3"><span class="nav-number">1.3.</span> <span class="nav-text">问题解决</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E8%AF%B4%E6%98%8E"><span class="nav-number">1.4.</span> <span class="nav-text">相关说明</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

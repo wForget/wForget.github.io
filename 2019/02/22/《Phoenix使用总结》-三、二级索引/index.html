@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Phoenix," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="二级索引HBase 二级索引方案HBase 中的行是以 RowKey 的字典序排序存储。所以对于 HBase 的快速查询主要有两种场景，一种是根据 RowKey 快速查询单行数据，另一种是基于 RowKey 的前缀查询。由于 HBase 只有 RowKey 的一级索引，根据其他的字段进行查询效率是很低的，实际业务场景中可能需要引入二级索引。 我所了解的 HBase 二级索引的解决思路有如下几种：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《Phoenix使用总结》 三、二级索引">
+<meta property="og:url" content="https://wforget.github.io/2019/02/22/%E3%80%8APhoenix%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93%E3%80%8B-%E4%B8%89%E3%80%81%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="二级索引HBase 二级索引方案HBase 中的行是以 RowKey 的字典序排序存储。所以对于 HBase 的快速查询主要有两种场景，一种是根据 RowKey 快速查询单行数据，另一种是基于 RowKey 的前缀查询。由于 HBase 只有 RowKey 的一级索引，根据其他的字段进行查询效率是很低的，实际业务场景中可能需要引入二级索引。 我所了解的 HBase 二级索引的解决思路有如下几种：">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-02-22T09:51:40.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.819Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Phoenix">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2019/02/22/《Phoenix使用总结》-三、二级索引/"/>
+
+
+
+
+
+  <title>《Phoenix使用总结》 三、二级索引 | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2019/02/22/%E3%80%8APhoenix%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93%E3%80%8B-%E4%B8%89%E3%80%81%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">《Phoenix使用总结》 三、二级索引</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-22T17:51:40+08:00">
+                2019-02-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="二级索引"><a href="#二级索引" class="headerlink" title="二级索引"></a>二级索引</h2><h3 id="HBase-二级索引方案"><a href="#HBase-二级索引方案" class="headerlink" title="HBase 二级索引方案"></a>HBase 二级索引方案</h3><p>HBase 中的行是以 RowKey 的字典序排序存储。所以对于 HBase 的快速查询主要有两种场景，一种是根据 RowKey 快速查询单行数据，另一种是基于 RowKey 的前缀查询。由于 HBase 只有 RowKey 的一级索引，根据其他的字段进行查询效率是很低的，实际业务场景中可能需要引入二级索引。</p>
+<p>我所了解的 HBase 二级索引的解决思路有如下几种：</p>
+<ul>
+<li>官方的解决方案是使用 Coprocessor(类似触发器)，自定义写入逻辑，当有数据写入时同时写入一份索引表。</li>
+<li>可以使用其他的工具在外部构建和维护索引关系，索引字段和 RowKey 的对应关系，比如使用 Elasticsearch、MongoDB 等。</li>
+<li>使用 Phoenix 构建二级索引。</li>
+</ul>
+<p>Coprocessor 的方案由于运行都交给了 Regionserver，侵入性比较强，会对 Regionserver 的性能造成影响。第一版的时候我使用了 MongoDB 维护了索引关系，后期数据量达到 20 亿，对 MongoDB 所在的服务器造成了很大的压力，所以后期决定使用基于 HBase 的 Phoenix 构建二级索引。</p>
+<h3 id="Phoenix-二级索引"><a href="#Phoenix-二级索引" class="headerlink" title="Phoenix 二级索引"></a>Phoenix 二级索引</h3><p>官方文档：<a target="_blank" rel="noopener" href="http://phoenix.apache.org/secondary_indexing.html">http://phoenix.apache.org/secondary_indexing.html</a></p>
+<h4 id="索引特性"><a href="#索引特性" class="headerlink" title="索引特性"></a>索引特性</h4><blockquote>
+<p>Covered Indexes(覆盖索引) </p>
+</blockquote>
+<p>覆盖索引指的是把查询相关的字段都指定在索引中，这样查询就只需要在索引表中查询就行。建立索引的语句如下，把查询的字段（where条件字段）放在 ON 语句中，把其他需要查询出来的字段（其他 select 字段）放在 INCLUDE 中。</p>
+<p>Phoenix 的索引其实就是维护一张 HBase 表（本地索引与原始数据同一张表），把索引的字段作为 RowKey，把 INCLUDE 的字段放在 COLUMN 中。所以索引的顺序也注意，需要把条件中一定有的字段放在前面，可能有的字段放在后面。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX my_index ON my_table (v1,v2) INCLUDE(v3);</span><br><span class="line">SELECT v1, v2, v3 FROM my_table WHERE v1=&#x27;&#x27; AND v2=&#x27;&#x27;;	// where 条件中 v1、v2 字段放在 ON 语句中，其他查询字段 v3 放在 INCLUDE 语句中</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Functional Indexes(函数索引)</p>
+</blockquote>
+<p>索引的字段不局限与列，支持任意的表达式来创建索引。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX UPPER_NAME_IDX ON EMP (UPPER(FIRST_NAME||&#x27; &#x27;||LAST_NAME));</span><br><span class="line">SELECT EMP_ID FROM EMP WHERE UPPER(FIRST_NAME||&#x27; &#x27;||LAST_NAME)=&#x27;JOHN DOE&#x27;;	// 使用函数索引，生成大写的 FIRST_NAME + LAST_NAME 的索引</span><br></pre></td></tr></table></figure>
+
+<h4 id="构建索引"><a href="#构建索引" class="headerlink" title="构建索引"></a>构建索引</h4><p>Phoenix 支持两种类型的索引机制，Global Indexes(全局索引) 和 Local Indexes(本地索引)，不同的索引机制适用于不同的业务场景，默认是构建全局索引。全局索引是维护了一张新的索引表，本地索引的索引数据存在了原始数据表中(4.8.0之后)。</p>
+<blockquote>
+<p>Global Indexes(全局索引)</p>
+</blockquote>
+<p>Global Indexes(全局索引) 适用于大量读取操作的场景。所有数据的更新和写操作都需要更新相关的索引表，所以开销主要发生在写入阶段，查询是直接查询索引表，所以查询开销较小。由于只会查询索引表，所以在建立索引时需要合理设计 INCLUDE 字段，把需要查询的字段都放进去。</p>
+<blockquote>
+<p>Local Indexes(本地索引)</p>
+</blockquote>
+<p>Local Indexes(本地索引) 适用于大量写入操作的场景。本地索引的索引数据放在了数据表中(从4.8.0开始，我们将所有本地索引数据存储在同一数据表中的单独阴影列族中)，索引数据和原始数据是在同一台机器上面，所以没有额外的网络开销。本地索引可以使用在没有全面覆盖 INCLUDE 的场景。</p>
+<h4 id="索引实例"><a href="#索引实例" class="headerlink" title="索引实例"></a>索引实例</h4><blockquote>
+<p>异步创建索引</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 先创建异步索引</span><br><span class="line">CREATE INDEX async_index ON my_schema.my_table (v) ASYNC</span><br><span class="line"></span><br><span class="line"># 再通过 MapReduce 任务异步构建索引，output-path 是一个hdfs路径（存放 MapReduce 任务执行的临时文件）</span><br><span class="line">$&#123;HBASE_HOME&#125;/bin/hbase org.apache.phoenix.mapreduce.index.IndexTool</span><br><span class="line">  --schema my_schema --data-table my_table --index-table async_index</span><br><span class="line">  --output-path ASYNC_IDX_HFILES</span><br><span class="line"></span><br><span class="line"># 实例</span><br><span class="line">CREATE LOCAL INDEX match_index_new_qm ON PUBG.MATCH_INDEX_NEW(lowerNickName, type, mode, queueSize, startedAt DESC) INCLUDE (matchId, totalRank) ASYNC</span><br><span class="line"># 构建时发现无法找到 org.apache.phoenix.mapreduce.index.IndexTool 类，索引把 jar 加到 HBASE_CLASSPATH 中</span><br><span class="line">export HBASE_CLASSPATH=/opt/cloudera/parcels/APACHE_PHOENIX/lib/phoenix/phoenix-4.14.0-cdh5.13.2-client.jar</span><br><span class="line">hbase org.apache.phoenix.mapreduce.index.IndexTool --schema PUBG --data-table MATCH_INDEX_NEW --index-table match_index_new_qm --output-path /user/hadoop/wangzhen</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>创建索引</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX my_index ON my_table (v1) INCLUDE (v2);</span><br><span class="line"></span><br><span class="line">CREATE INDEX my_index ON my_table (v2 DESC, v1) INCLUDE (v3)</span><br><span class="line">    SALT_BUCKETS=10, DATA_BLOCK_ENCODING=&#x27;NONE&#x27;;</span><br></pre></td></tr></table></figure>
+
+<p>与CREATE TABLE语句一样，CREATE INDEX语句可以传递属性以应用于基础HBase表，包括对其进行加盐的能力，如果主表被加盐，则索引将以相同的方式自动为全局索引加盐。使用本地索引时，不允许指定SALT_BUCKETS。</p>
+<blockquote>
+<p>创建本地索引</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CREATE LOCAL INDEX my_index ON my_table (v1)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>查询时指定索引</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT /*+ INDEX(my_table my_index) */ v2 FROM my_table WHERE v1 = &#x27;foo&#x27;</span><br></pre></td></tr></table></figure>
+
+
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Phoenix/" rel="tag"># Phoenix</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/22/%E3%80%8APhoenix%E4%BD%BF%E7%94%A8%E6%80%BB%E7%BB%93%E3%80%8B-%E4%BA%8C%E3%80%81Spark%E6%93%8D%E4%BD%9CPhoenix/" rel="next" title="《Phoenix使用总结》 二、Spark操作Phoenix">
+                <i class="fa fa-chevron-left"></i> 《Phoenix使用总结》 二、Spark操作Phoenix
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/28/Redis-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/" rel="prev" title="Redis 分布式锁">
+                Redis 分布式锁 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95"><span class="nav-number">1.</span> <span class="nav-text">二级索引</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#HBase-%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95%E6%96%B9%E6%A1%88"><span class="nav-number">1.1.</span> <span class="nav-text">HBase 二级索引方案</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Phoenix-%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95"><span class="nav-number">1.2.</span> <span class="nav-text">Phoenix 二级索引</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E7%89%B9%E6%80%A7"><span class="nav-number">1.2.1.</span> <span class="nav-text">索引特性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E7%B4%A2%E5%BC%95"><span class="nav-number">1.2.2.</span> <span class="nav-text">构建索引</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.2.3.</span> <span class="nav-text">索引实例</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

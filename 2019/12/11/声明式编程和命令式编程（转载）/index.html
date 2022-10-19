@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="声明式编程和命令式编程（转载）原文地址：声明式编程和命令式编程的比较 先统一一下概念，我们有两种编程方式：命令式和声明式。我们可以像下面这样定义它们之间的不同：  命令式编程：命令“机器”如何去做事情(how)，这样不管你想要的是什么(what)，它都会按照你的命令实现。 声明式编程：告诉“机器”你想要的是什么(what)，让机器想出如何去做(how)。    声明式编程和命令式编程的代码例子举个">
+<meta property="og:type" content="article">
+<meta property="og:title" content="声明式编程和命令式编程（转载）">
+<meta property="og:url" content="https://wforget.github.io/2019/12/11/%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%EF%BC%88%E8%BD%AC%E8%BD%BD%EF%BC%89/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="声明式编程和命令式编程（转载）原文地址：声明式编程和命令式编程的比较 先统一一下概念，我们有两种编程方式：命令式和声明式。我们可以像下面这样定义它们之间的不同：  命令式编程：命令“机器”如何去做事情(how)，这样不管你想要的是什么(what)，它都会按照你的命令实现。 声明式编程：告诉“机器”你想要的是什么(what)，让机器想出如何去做(how)。    声明式编程和命令式编程的代码例子举个">
+<meta property="og:locale">
+<meta property="og:image" content="https://wforget.github.io/2019/12/11/%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%EF%BC%88%E8%BD%AC%E8%BD%BD%EF%BC%89/Imperative-vs-Declarative.png">
+<meta property="article:published_time" content="2019-12-11T03:14:03.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.822Z">
+<meta property="article:author" content="wangz">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wforget.github.io/2019/12/11/%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%EF%BC%88%E8%BD%AC%E8%BD%BD%EF%BC%89/Imperative-vs-Declarative.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2019/12/11/声明式编程和命令式编程（转载）/"/>
+
+
+
+
+
+  <title>声明式编程和命令式编程（转载） | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2019/12/11/%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%EF%BC%88%E8%BD%AC%E8%BD%BD%EF%BC%89/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">声明式编程和命令式编程（转载）</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-11T11:14:03+08:00">
+                2019-12-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="声明式编程和命令式编程（转载）"><a href="#声明式编程和命令式编程（转载）" class="headerlink" title="声明式编程和命令式编程（转载）"></a>声明式编程和命令式编程（转载）</h2><p>原文地址：<a target="_blank" rel="noopener" href="http://www.aqee.net/post/imperative-vs-declarative.html">声明式编程和命令式编程的比较</a></p>
+<h3 id="先统一一下概念，我们有两种编程方式：命令式和声明式。"><a href="#先统一一下概念，我们有两种编程方式：命令式和声明式。" class="headerlink" title="先统一一下概念，我们有两种编程方式：命令式和声明式。"></a>先统一一下概念，我们有两种编程方式：命令式和声明式。</h3><p>我们可以像下面这样定义它们之间的不同：</p>
+<ul>
+<li>命令式编程：命令“机器”如何去做事情(how)，这样不管你想要的是什么(what)，它都会按照你的命令实现。</li>
+<li>声明式编程：告诉“机器”你想要的是什么(what)，让机器想出如何去做(how)。</li>
+</ul>
+<img src="/2019/12/11/%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%EF%BC%88%E8%BD%AC%E8%BD%BD%EF%BC%89/Imperative-vs-Declarative.png" class="" title="[Imperative-vs-Declarative]">
+
+<h3 id="声明式编程和命令式编程的代码例子"><a href="#声明式编程和命令式编程的代码例子" class="headerlink" title="声明式编程和命令式编程的代码例子"></a>声明式编程和命令式编程的代码例子</h3><p>举个简单的例子，假设我们想让一个数组里的数值翻倍。</p>
+<p>我们用命令式编程风格实现，像下面这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">var numbers = [1,2,3,4,5]</span><br><span class="line"></span><br><span class="line">var doubled = []</span><br><span class="line"></span><br><span class="line">for(var i = 0; i &lt; numbers.length; i++) &#123;</span><br><span class="line">  var newNumber = numbers[i] * 2</span><br><span class="line">  doubled.push(newNumber)</span><br><span class="line">&#125;</span><br><span class="line">console.log(doubled) //=&gt; [2,4,6,8,10]</span><br></pre></td></tr></table></figure>
+
+<p>我们直接遍历整个数组，取出每个元素，乘以二，然后把翻倍后的值放入新数组，每次都要操作这个双倍数组，直到计算完所有元素。</p>
+<p>而使用声明式编程方法，我们可以用 Array.map 函数，像下面这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">var numbers = [1,2,3,4,5]</span><br><span class="line"></span><br><span class="line">var doubled = numbers.map(function(n) &#123;</span><br><span class="line">  return n * 2</span><br><span class="line">&#125;)</span><br><span class="line">console.log(doubled) //=&gt; [2,4,6,8,10]</span><br></pre></td></tr></table></figure>
+
+<p>map 利用当前的数组创建了一个新数组，新数组里的每个元素都是经过了传入map的函数(这里是function(n) { return n*2 })的处理。</p>
+<p>map函数所作的事情是将直接遍历整个数组的过程归纳抽离出来，让我们专注于描述我们想要的是什么(what)。注意，我们传入map的是一个纯函数；它不具有任何副作用(不会改变外部状态)，它只是接收一个数字，返回乘以二后的值。</p>
+<p>在一些具有函数式编程特征的语言里，对于list数据类型的操作，还有一些其他常用的声明式的函数方法。例如，求一个list里所有值的和，命令式编程会这样做：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">var numbers = [1,2,3,4,5]</span><br><span class="line"></span><br><span class="line">var total = 0</span><br><span class="line"></span><br><span class="line">for(var i = 0; i &lt; numbers.length; i++) &#123;</span><br><span class="line">  total += numbers[i]</span><br><span class="line">&#125;</span><br><span class="line">console.log(total) //=&gt; 15</span><br></pre></td></tr></table></figure>
+
+<p>而在声明式编程方式里，我们使用 reduce 函数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">var numbers = [1,2,3,4,5]</span><br><span class="line"></span><br><span class="line">var total = numbers.reduce(function(sum, n) &#123;</span><br><span class="line">  return sum + n</span><br><span class="line">&#125;);</span><br><span class="line">console.log(total) //=&gt; 15</span><br></pre></td></tr></table></figure>
+
+<p>reduce 函数利用传入的函数把一个 list 运算成一个值。它以这个函数为参数，数组里的每个元素都要经过它的处理。每一次调用，第一个参数(这里是sum)都是这个函数处理前一个值时返回的结果，而第二个参数(n)就是当前元素。这样下来，每此处理的新元素都会合计到sum中，最终我们得到的是整个数组的和。</p>
+<p>同样，reduce 函数归纳抽离了我们如何遍历数组和状态管理部分的实现，提供给我们一个通用的方式来把一个 list 合并成一个值。我们需要做的只是指明我们想要的是什么？</p>
+<h3 id="声明式编程语言：SQL"><a href="#声明式编程语言：SQL" class="headerlink" title="声明式编程语言：SQL"></a>声明式编程语言：SQL</h3><p>也许你还不能明白，但有一个地方，你也许已经用到了声明式编程，那就是SQL。</p>
+<p>你可以把SQL当做一个处理数据的声明式查询语言。完全用SQL写一个应用程序？这不可能。但如果是处理相互关联的数据集，它就显的无比强大了。</p>
+<p>像下面这样的查询语句：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT * from dogs</span><br><span class="line">INNER JOIN owners</span><br><span class="line"></span><br><span class="line">WHERE dogs.owner_id = owners.id</span><br></pre></td></tr></table></figure>
+
+<p>如果我们用命令式编程方式实现这段逻辑：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">//dogs = [&#123;name: &#x27;Fido&#x27;, owner_id: 1&#125;, &#123;...&#125;, ... ]</span><br><span class="line">//owners = [&#123;id: 1, name: &#x27;Bob&#x27;&#125;, &#123;...&#125;, ...]</span><br><span class="line"></span><br><span class="line">var dogsWithOwners = []</span><br><span class="line">var dog, owner</span><br><span class="line"></span><br><span class="line">for(var di=0; di &lt; dogs.length; di++) &#123;</span><br><span class="line">  dog = dogs[di]</span><br><span class="line"></span><br><span class="line">  for(var oi=0; oi &lt; owners.length; oi++) &#123;</span><br><span class="line">    owner = owners[oi]</span><br><span class="line">    if (owner &amp;&amp; dog.owner_id == owner.id) &#123;</span><br><span class="line">      dogsWithOwners.push(&#123;</span><br><span class="line">        dog: dog,</span><br><span class="line">        owner: owner</span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我可没说SQL是一种很容易懂的语言，也没说一眼就能把它们看明白，但基本上还是很整洁的。</p>
+<p>SQL代码不仅很短，不不仅容易读懂，它还有更大的优势。因为我们归纳抽离了how，我们就可以专注于what，让数据库来帮我们优化how.</p>
+<p>我们的命令式编程代码会运行的很慢，因为需要遍历所有 list 里的每个狗的主人。</p>
+<p>而SQL例子里我们可以让数据库来处理how，来替我们去找我们想要的数据。如果需要用到索引(假设我们建了索引)，数据库知道如何使用索引，这样性能又有了大的提升。如果在此不久之前它执行过相同的查询，它也许会从缓存里立即找到。通过放手how，让机器来做这些有难度的事，我们不需要掌握数据库原理就能轻松的完成任务。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/11/19/%E3%80%8ASpark%E7%9F%A5%E8%AF%86%E6%A2%B3%E7%90%86%E3%80%8B-%E4%B8%80%E3%80%81Spark%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/" rel="next" title="《Spark知识梳理》 一、Spark基本概念">
+                <i class="fa fa-chevron-left"></i> 《Spark知识梳理》 一、Spark基本概念
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/12/12/Hive-SQL%E7%9A%84%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B/" rel="prev" title="Hive SQL的编译过程">
+                Hive SQL的编译过程 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%EF%BC%88%E8%BD%AC%E8%BD%BD%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">声明式编程和命令式编程（转载）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%88%E7%BB%9F%E4%B8%80%E4%B8%80%E4%B8%8B%E6%A6%82%E5%BF%B5%EF%BC%8C%E6%88%91%E4%BB%AC%E6%9C%89%E4%B8%A4%E7%A7%8D%E7%BC%96%E7%A8%8B%E6%96%B9%E5%BC%8F%EF%BC%9A%E5%91%BD%E4%BB%A4%E5%BC%8F%E5%92%8C%E5%A3%B0%E6%98%8E%E5%BC%8F%E3%80%82"><span class="nav-number">1.1.</span> <span class="nav-text">先统一一下概念，我们有两种编程方式：命令式和声明式。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%E7%9A%84%E4%BB%A3%E7%A0%81%E4%BE%8B%E5%AD%90"><span class="nav-number">1.2.</span> <span class="nav-text">声明式编程和命令式编程的代码例子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%EF%BC%9ASQL"><span class="nav-number">1.3.</span> <span class="nav-text">声明式编程语言：SQL</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

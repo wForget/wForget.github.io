@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Atlas,Full GC," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Atlas 1.1.0 Full GC 问题分析问题背景频繁接收到 Atlas 拨测告警，拨测程序是访问 atlas 查询 entity 的接口，一段时间都是 502 的返回，持续几分钟后恢复。查看 Atlas gc 日志，发现 Full GC 日志，并且持续时间和服务不可用时间吻合，基本确定就是由于 Full GC 导致。 GC LOG 分析JVM 相关参数调整查看 GC 日志发现，（concu">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Atlas 1.1.0 Full GC 问题分析">
+<meta property="og:url" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="Atlas 1.1.0 Full GC 问题分析问题背景频繁接收到 Atlas 拨测告警，拨测程序是访问 atlas 查询 entity 的接口，一段时间都是 502 的返回，持续几分钟后恢复。查看 Atlas gc 日志，发现 Full GC 日志，并且持续时间和服务不可用时间吻合，基本确定就是由于 Full GC 导致。 GC LOG 分析JVM 相关参数调整查看 GC 日志发现，（concu">
+<meta property="og:locale">
+<meta property="og:image" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/full_gc_log_failure.png">
+<meta property="og:image" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/gcviewer.png">
+<meta property="og:image" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/jhat.png">
+<meta property="og:image" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/heap_histogram.png">
+<meta property="og:image" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/vertex1.png">
+<meta property="og:image" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/vertex2.png">
+<meta property="og:image" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/vertex.png">
+<meta property="og:image" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/oql_count.png">
+<meta property="article:published_time" content="2021-02-24T08:57:18.000Z">
+<meta property="article:modified_time" content="2022-10-18T12:17:03.743Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Atlas">
+<meta property="article:tag" content="Full GC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/full_gc_log_failure.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-问题分析/"/>
+
+
+
+
+
+  <title>Atlas 1.1.0 Full GC 问题分析 | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Atlas 1.1.0 Full GC 问题分析</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2021-02-24T16:57:18+08:00">
+                2021-02-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Atlas-1-1-0-Full-GC-问题分析"><a href="#Atlas-1-1-0-Full-GC-问题分析" class="headerlink" title="Atlas 1.1.0 Full GC 问题分析"></a>Atlas 1.1.0 Full GC 问题分析</h2><h3 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h3><p>频繁接收到 Atlas 拨测告警，拨测程序是访问 atlas 查询 entity 的接口，一段时间都是 502 的返回，持续几分钟后恢复。查看 Atlas gc 日志，发现 Full GC 日志，并且持续时间和服务不可用时间吻合，基本确定就是由于 Full GC 导致。</p>
+<h3 id="GC-LOG-分析"><a href="#GC-LOG-分析" class="headerlink" title="GC LOG 分析"></a>GC LOG 分析</h3><h4 id="JVM-相关参数调整"><a href="#JVM-相关参数调整" class="headerlink" title="JVM 相关参数调整"></a>JVM 相关参数调整</h4><p>查看 GC 日志发现，（concurrent mode failure）导致的 Full GC。</p>
+<img src="/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/full_gc_log_failure.png" class="">
+
+<p>进行 JVM 参数调整，将 -XX:CMSInitiatingOccupancyFraction 设置为 50，即当老年代内存达到 50% 时，触发 CMS GC。<br>，参考：<a target="_blank" rel="noopener" href="https://www.jianshu.com/p/ca1b0d4107c5">CMS之promotion failed&amp;concurrent mode failure</a> </p>
+<p>完整参数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnabled -XX:+HeapDumpOnOutOfMemoryError -XX:CMSInitiatingOccupancyFraction=50 -XX:ParallelGCThreads=20 -XX:+CMSScavengeBeforeRemark -XX:MaxGCPauseMillis=400 -XX:HeapDumpPath=dumps/atlas_server.hprof -Xloggc:logs/gc-worker.log -verbose:gc -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=10m -XX:+PrintGCDetails -XX:+PrintGCDateStamps</span><br></pre></td></tr></table></figure>
+
+<p>调整完参数后，执行以下命令，观察 GC 变化。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jstat -gcutil PID 3000</span><br></pre></td></tr></table></figure>
+
+<p>发现 old Space 达到 50% 时，会触发一次 old GC，old Space 使用会下降，不过持续观察一段时间后，还是会出现 Full GC，调整内存还是会出现 Full GC 问题。</p>
+<h4 id="GC-log-分析工具"><a href="#GC-log-分析工具" class="headerlink" title="GC log 分析工具"></a>GC log 分析工具</h4><p>可以使用 GC Log 分析工具，直观的看到 GC 变化。</p>
+<h5 id="GCViewer"><a href="#GCViewer" class="headerlink" title="GCViewer"></a>GCViewer</h5><img src="/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/gcviewer.png" class="">
+
+<p>项目地址：<a target="_blank" rel="noopener" href="https://github.com/chewiebug/GCViewer">https://github.com/chewiebug/GCViewer</a><br>使用说明：<a target="_blank" rel="noopener" href="https://github.com/chewiebug/GCViewer/blob/develop/README.md#results-of-log-analysis">Results of log analysis</a></p>
+<h5 id="GCEasy"><a href="#GCEasy" class="headerlink" title="GCEasy"></a>GCEasy</h5><p>在线 GC log 分析，地址: <a target="_blank" rel="noopener" href="https://blog.gceasy.io/">https://blog.gceasy.io/</a></p>
+<h3 id="Dump-分析"><a href="#Dump-分析" class="headerlink" title="Dump 分析"></a>Dump 分析</h3><p>经过一些 JVM 参数的调整和 GC Log 分析，还是无法避免 Full GC，感觉可能还是由于创建大量存活对象，顾对程序进行 Dump 分析。</p>
+<h4 id="生成-Dump-文件"><a href="#生成-Dump-文件" class="headerlink" title="生成 Dump 文件"></a>生成 Dump 文件</h4><p>生成 Dump 文件的方式有很多种，下面列举了几种方式。由于 jmap 生成 DUMP 文件时会导致服务挂起，对线上服务有影响，所以尝试使用 gcore 方式。不过将 gcore 导出的 core 文件转换成 bin 文件报错，没有具体研究。最终使用的 Arthas heapdump 命令（不太确定是否影响线上服务）。</p>
+<blockquote>
+<p> Jmap 命令</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 显示Java堆详细信息</span><br><span class="line">jmap -heap [pid]</span><br><span class="line"></span><br><span class="line"># 显示堆中对象统计信息</span><br><span class="line">jmap -histo:live [pid]</span><br><span class="line"></span><br><span class="line"># 获取 dump 文件</span><br><span class="line">jmap -dump:live,:format=b,file=文件名 [pid]</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p> Arthas heapdump 命令</p>
+</blockquote>
+<p>具体参考：<a target="_blank" rel="noopener" href="https://arthas.aliyun.com/doc/heapdump.html">Arthas heapdump</a></p>
+<blockquote>
+<p> Gcore</p>
+</blockquote>
+<p>具体可参考：<a target="_blank" rel="noopener" href="https://www.jianshu.com/p/1c6bc8842463">记一次Java服务频繁Full GC的排查过程</a></p>
+<h4 id="分析-Dump-文件"><a href="#分析-Dump-文件" class="headerlink" title="分析 Dump 文件"></a>分析 Dump 文件</h4><p>使用 jhat 分析 dump 文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># dump.hprof 为 Dump 文件路径</span><br><span class="line">jhat -J-d64 -J-mx8g -J-ms8g dump.hprof</span><br></pre></td></tr></table></figure>
+
+<p>分析完成后，访问 <a target="_blank" rel="noopener" href="http://ip:7000/">http://IP:7000</a> ，查看详情。点击 ‘Show heap histogram’ 可查看堆中对象统计信息。</p>
+<img src="/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/jhat.png" class="">
+<img src="/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/heap_histogram.png" class="">
+
+<p>点击占用内存较高的对象，并抽样分析引用该对象的对象（References to this object 中的对象），关注到大多都指向了 CacheEdge 和 CacheVertex 两个类型的对象，这两个对象应该是 JanusGraph 中顶底和边。</p>
+<p>查看 CacheVertex 的关联对象，发现主要来自 LocalCache 和 CacheEdge 两个类型对象。</p>
+<img src="/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/vertex1.png" class="">
+<img src="/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/vertex2.png" class="">
+
+<h4 id="JanusGraph-缓存"><a href="#JanusGraph-缓存" class="headerlink" title="JanusGraph 缓存"></a>JanusGraph 缓存</h4><p>分析 LocalCache 对象，来自 com.google.common.cache.LocalCache.LocalManualCache 对象，是 Guava 的缓存工具。从对象引用确定到与 JanusGraph 的两个地方的缓存有关：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">org.janusgraph.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache#ExpirationKCVSCache</span><br><span class="line">org.janusgraph.graphdb.transaction.vertexcache.GuavaVertexCache#GuavaVertexCache</span><br></pre></td></tr></table></figure>
+
+<p>ExpirationKCVSCache 用于 JanusGraph 全局的 KeyColumnValue 缓存，db-cache-size 参数表示缓存最大占用总堆内存的百分比（小于 1 时），或指定缓存大小（大于 1 时），默认为 0.3。</p>
+<p>GuavaVertexCache 用于 Transaction 中的 Vertex 缓存。tx-cache-size 参数表示一次事务中最大缓存 Vertex 的大小，JanusGraph 中默认为 20000，Atlas 里面默认为 15000。</p>
+<p>怀疑是否是缓存过大导致，顾对以下参数进行调整。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">atlas.graph.cache.db-cache-size=0.2 # </span><br><span class="line">atlas.graph.cache.tx-cache-size=100</span><br></pre></td></tr></table></figure>
+
+<h4 id="查找元凶"><a href="#查找元凶" class="headerlink" title="查找元凶"></a>查找元凶</h4><p>对缓存进行调整后发现还是出现 Full GC 继续分析 Dump 文件。</p>
+<p>CacheVertex 和 CacheEdge 对象相互引用，看到部分 CacheVertex 被大量 CacheEdge 引用。猜测是否由于一个定点有很多的边导致的。</p>
+<img src="/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/vertex.png" class="">
+
+<p>使用 OQL 查询被引用对象超过 1000 的 CacheVertex，具体语法参考：<a target="_blank" rel="noopener" href="http://cr.openjdk.java.net/~sundar/8022483/webrev.01/raw_files/new/src/share/classes/com/sun/tools/hat/resources/oqlhelp.html">Object Query Language</a>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select &#123; name:v, id: v.id, count: count(referrers(v))&#125; from org.janusgraph.graphdb.vertices.CacheVertex v where count(referrers(v))  &gt; 1000</span><br></pre></td></tr></table></figure>
+
+<img src="/2021/02/24/Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90/oql_count.png" class="">
+
+<p>可以看到有个定点甚至有几万的边，使用 Gremlin 查询这些 Vertex，发现主要是下面两种情况，这里操作参考之前文章：<a href="/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/" title="Gremlin Server&#x2F;Console 适配 Atlas JanusGraph">Gremlin Server&#x2F;Console 适配 Atlas JanusGraph</a>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">gremlin&gt; g.V(1006100712).properties(&quot;__typeName&quot;)</span><br><span class="line">==&gt;vp[__typeName-&gt;hive_table]</span><br><span class="line">gremlin&gt; g.V(1006100712).inE().count()</span><br><span class="line">==&gt;34436</span><br><span class="line">gremlin&gt; g.V(1006100712).inE()</span><br><span class="line">==&gt;e[51zpq-1mank-2711-gn08a0][2719856-__Process.inputs-&gt;1006100712]</span><br><span class="line">==&gt;e[635se-1yhyo-2711-gn08a0][3289200-__Process.inputs-&gt;1006100712]</span><br><span class="line">==&gt;e[7tmvi-2iycw-2711-gn08a0][4243568-__Process.inputs-&gt;1006100712]</span><br><span class="line">==&gt;e[b50r2-3p6k0-2711-gn08a0][6213744-__Process.inputs-&gt;1006100712]</span><br><span class="line">......</span><br><span class="line"></span><br><span class="line">gremlin&gt; g.V(98328).properties(&quot;__typeName&quot;)</span><br><span class="line">==&gt;vp[__typeName-&gt;hive_db]</span><br><span class="line">gremlin&gt; g.V(98328).inE().count()</span><br><span class="line">==&gt;5734</span><br><span class="line">gremlin&gt; g.V(98328).inE()</span><br><span class="line">==&gt;e[8o4f-2goo-acyd-23vc][114936-__hive_table.db-&gt;98328]</span><br><span class="line">==&gt;e[ej2i-44ls-acyd-23vc][192592-__hive_table.db-&gt;98328]</span><br><span class="line">==&gt;e[sl5n-6riw-acyd-23vc][315608-__hive_table.db-&gt;98328]</span><br><span class="line">==&gt;e[tpfy-9qwg-acyd-23vc][454768-__hive_table.db-&gt;98328]</span><br><span class="line">==&gt;e[c2oer-48hw8-acyd-23vc][7114904-__hive_table.db-&gt;98328]</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+
+<p>可以看到 hive_db 的情况，应该是会查询出 hive_db 的所有 hive_table，正常的操作不应该查询出所有的关联对象，再对程序进行 jstack 分析。</p>
+<h4 id="解决问题"><a href="#解决问题" class="headerlink" title="解决问题"></a>解决问题</h4><p>再对程序进行 jstack 分析，这里需要注意需要在程序正常运行是进行 jstack，不要在 Full GC 发生时进行 jstack。</p>
+<p>通过查看 jstack log 注意到的 org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever#mapRelationshipAttributes 方法，这个方法会遍历 relationship 的对象，会导致大量对象的创建。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">&quot;NotificationHookConsumer thread-40&quot; #522 prio=5 os_prio=0 tid=0x00007f897794d000 nid=0x98e5 runnable [0x00007f69c4ecd000]</span><br><span class="line">   java.lang.Thread.State: RUNNABLE</span><br><span class="line">	// ......</span><br><span class="line">	at org.apache.tinkerpop.gremlin.structure.Vertex.property(Vertex.java:38)</span><br><span class="line">	at org.apache.atlas.repository.graphdb.janus.AtlasJanusElement.getProperty(AtlasJanusElement.java:65)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex(AtlasGraphUtilsV2.java:105)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToRelatedObjectId(EntityGraphRetriever.java:1025)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapRelatedVertexToObjectId(EntityGraphRetriever.java:991)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToRelationshipAttribute(EntityGraphRetriever.java:976)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapRelationshipAttributes(EntityGraphRetriever.java:944)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToAtlasEntity(EntityGraphRetriever.java:418)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToAtlasEntity(EntityGraphRetriever.java:395)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToObjectId(EntityGraphRetriever.java:900)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToCollectionEntry(EntityGraphRetriever.java:819)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToArray(EntityGraphRetriever.java:787)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToAttribute(EntityGraphRetriever.java:709)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapAttributes(EntityGraphRetriever.java:568)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToAtlasEntity(EntityGraphRetriever.java:415)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.toAtlasEntityWithExtInfo(EntityGraphRetriever.java:183)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.toAtlasEntityWithExtInfo(EntityGraphRetriever.java:178)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.toAtlasEntityWithExtInfo(EntityGraphRetriever.java:166)</span><br><span class="line">	at org.apache.atlas.repository.converters.AtlasInstanceConverter.getAndCacheEntity(AtlasInstanceConverter.java:300)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier.toAtlasEntities(AtlasEntityChangeNotifier.java:409)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier.notifyV2Listeners(AtlasEntityChangeNotifier.java:305)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier.notifyListeners(AtlasEntityChangeNotifier.java:275)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier.onEntitiesMutated(AtlasEntityChangeNotifier.java:108)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2.createOrUpdate(AtlasEntityStoreV2.java:732)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2.createOrUpdate(AtlasEntityStoreV2.java:253)</span><br><span class="line">	// ......</span><br><span class="line">	</span><br><span class="line">&quot;NotificationHookConsumer thread-11&quot; #464 prio=5 os_prio=0 tid=0x00007f8977919000 nid=0x98c8 runnable [0x00007f69c6beb000]</span><br><span class="line">   java.lang.Thread.State: RUNNABLE</span><br><span class="line">	// ......</span><br><span class="line">	at org.apache.tinkerpop.gremlin.structure.Vertex.property(Vertex.java:72)</span><br><span class="line">	at org.apache.tinkerpop.gremlin.structure.Vertex.property(Vertex.java:38)</span><br><span class="line">	at org.apache.atlas.repository.graphdb.janus.AtlasJanusElement.getProperty(AtlasJanusElement.java:65)</span><br><span class="line">	at org.apache.atlas.repository.graph.GraphHelper.getTypeName(GraphHelper.java:1090)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapSystemAttributes(EntityGraphRetriever.java:1121)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapEdgeToAtlasRelationship(EntityGraphRetriever.java:1080)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapEdgeToAtlasRelationship(EntityGraphRetriever.java:1070)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToRelatedObjectId(EntityGraphRetriever.java:1033)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapRelationshipArrayAttribute(EntityGraphRetriever.java:1010)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToRelationshipAttribute(EntityGraphRetriever.java:981)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapRelationshipAttributes(EntityGraphRetriever.java:944)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToAtlasEntity(EntityGraphRetriever.java:418)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.mapVertexToAtlasEntity(EntityGraphRetriever.java:395)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.toAtlasEntity(EntityGraphRetriever.java:162)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2.createOrUpdate(AtlasEntityStoreV2.java:699)</span><br><span class="line">	at org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2.createOrUpdate(AtlasEntityStoreV2.java:253)</span><br><span class="line">	// ......</span><br></pre></td></tr></table></figure>
+
+<p>根据上面两个线程栈信息，定位在了下面两个方法，具体的修改参考 Atlas 2.1.0 代码进行修改，这里主要是去掉不必要的 Relationship 查询。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier#toAtlasEntities</span><br><span class="line"></span><br><span class="line">org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2#createOrUpdate(org.apache.atlas.repository.store.graph.v2.EntityStream, boolean, boolean)</span><br></pre></td></tr></table></figure>
+
+<p>修改后问题解决，消费性能大幅度提高，后续计划升级至 Atlas 2.1.0。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Atlas/" rel="tag"># Atlas</a>
+          
+            <a href="/tags/Full-GC/" rel="tag"># Full GC</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/" rel="next" title="Gremlin Server/Console 适配 Atlas JanusGraph">
+                <i class="fa fa-chevron-left"></i> Gremlin Server/Console 适配 Atlas JanusGraph
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2021/03/08/JanusGraph-OLAP-Traversals-with-Spark-On-Yarn-Client-Mode/" rel="prev" title="JanusGraph: OLAP Traversals with Spark On Yarn-Client Mode">
+                JanusGraph: OLAP Traversals with Spark On Yarn-Client Mode <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Atlas-1-1-0-Full-GC-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text">Atlas 1.1.0 Full GC 问题分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF"><span class="nav-number">1.1.</span> <span class="nav-text">问题背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GC-LOG-%E5%88%86%E6%9E%90"><span class="nav-number">1.2.</span> <span class="nav-text">GC LOG 分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#JVM-%E7%9B%B8%E5%85%B3%E5%8F%82%E6%95%B0%E8%B0%83%E6%95%B4"><span class="nav-number">1.2.1.</span> <span class="nav-text">JVM 相关参数调整</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#GC-log-%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7"><span class="nav-number">1.2.2.</span> <span class="nav-text">GC log 分析工具</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#GCViewer"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">GCViewer</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#GCEasy"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">GCEasy</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Dump-%E5%88%86%E6%9E%90"><span class="nav-number">1.3.</span> <span class="nav-text">Dump 分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E6%88%90-Dump-%E6%96%87%E4%BB%B6"><span class="nav-number">1.3.1.</span> <span class="nav-text">生成 Dump 文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E6%9E%90-Dump-%E6%96%87%E4%BB%B6"><span class="nav-number">1.3.2.</span> <span class="nav-text">分析 Dump 文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#JanusGraph-%E7%BC%93%E5%AD%98"><span class="nav-number">1.3.3.</span> <span class="nav-text">JanusGraph 缓存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E6%89%BE%E5%85%83%E5%87%B6"><span class="nav-number">1.3.4.</span> <span class="nav-text">查找元凶</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E9%97%AE%E9%A2%98"><span class="nav-number">1.3.5.</span> <span class="nav-text">解决问题</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
