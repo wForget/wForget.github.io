@@ -251,6 +251,179 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/" itemprop="url">Gremlin Server/Console 适配 Atlas JanusGraph</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-12-14T19:00:20+08:00">
+                2020-12-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="Gremlin-Server-x2F-Console-适配-Atlas-JanusGraph"><a href="#Gremlin-Server-x2F-Console-适配-Atlas-JanusGraph" class="headerlink" title="Gremlin Server&#x2F;Console 适配 Atlas JanusGraph"></a>Gremlin Server&#x2F;Console 适配 Atlas JanusGraph</h3><p>Atlas 底层存储使用的 JanusGraph，由于对于 Atlas 底层数据结构并不太清楚，所以希望能够通过 Gremlin Console 来操作 Atlas 的 JanusGraph，使用 Gremlin Query Language 执行一些更加灵活的查询，并直观的查询数据结构。适配的思路参考了 <a target="_blank" rel="noopener" href="https://github.com/sburn/docker-apache-atlas">docker-apache-atlas</a> 项目。</p>
+<h3 id="Gremlin-Server"><a href="#Gremlin-Server" class="headerlink" title="Gremlin Server"></a>Gremlin Server</h3><ol>
+<li>下载相同版本的 gremlin server ，解压，并添加 Atlas 相关的依赖包</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ATLAS_HOME=/home/anchor/apache-atlas-2.1.0/</span><br><span class="line">GREMLIN_SERVER_HOME=/home/anchor/gremlin/apache-tinkerpop-gremlin-server-3.4.6</span><br><span class="line">ln -s $&#123;ATLAS_HOME&#125;/server/webapp/atlas/WEB-INF/lib/*.jar $&#123;GREMLIN_SERVER_HOME&#125;/lib 2&gt;/dev/null</span><br><span class="line">rm -f $&#123;GREMLIN_SERVER_HOME&#125;/lib/atlas-webapp-2.1.0.jar</span><br><span class="line">rm -f $&#123;GREMLIN_SERVER_HOME&#125;/lib/netty-3.10.5.Final.jar</span><br><span class="line">rm -f $&#123;GREMLIN_SERVER_HOME&#125;/lib/netty-all-4.0.52.Final.jar</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>gremlin server 配置</li>
+</ol>
+<p>gremlin-server-atlas-wshttp.yaml 配置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">host: 0.0.0.0</span><br><span class="line">port: 8182</span><br><span class="line">scriptEvaluationTimeout: 30000</span><br><span class="line">#channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer</span><br><span class="line">channelizer: org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer</span><br><span class="line">graphs: &#123;</span><br><span class="line">  graph: conf/janusgraph-hbase-es.properties</span><br><span class="line">&#125;</span><br><span class="line">scriptEngines: &#123;</span><br><span class="line">  gremlin-groovy: &#123;</span><br><span class="line">    plugins: &#123; org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: &#123;&#125;,</span><br><span class="line">               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: &#123;&#125;,</span><br><span class="line">               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: &#123;classImports: [java.lang.Math], methodImports: [java.lang.Math#*]&#125;,</span><br><span class="line">               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: &#123;files: [scripts/empty-sample.groovy]&#125;&#125;&#125;&#125;</span><br><span class="line"># JanusGraph sets default serializers. You need to uncomment the following lines, if you require any custom serializers.</span><br><span class="line">#</span><br><span class="line"># serializers:</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1, config: &#123; serializeResultToString: true &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: &#123; serializeResultToString: true &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   # Older serialization versions for backwards compatibility:</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoLiteMessageSerializerV1d0, config: &#123;ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: &#123; serializeResultToString: true &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV2d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerGremlinV1d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistryV1d0] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV1d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistryV1d0] &#125;&#125;</span><br><span class="line">processors:</span><br><span class="line">  - &#123; className: org.apache.tinkerpop.gremlin.server.op.session.SessionOpProcessor, config: &#123; sessionTimeout: 28800000 &#125;&#125;</span><br><span class="line">  - &#123; className: org.apache.tinkerpop.gremlin.server.op.traversal.TraversalOpProcessor, config: &#123; cacheExpirationTime: 600000, cacheMaxSize: 1000 &#125;&#125;</span><br><span class="line">metrics: &#123;</span><br><span class="line">  consoleReporter: &#123;enabled: true, interval: 180000&#125;,</span><br><span class="line">  csvReporter: &#123;enabled: true, interval: 180000, fileName: /tmp/gremlin-server-metrics.csv&#125;,</span><br><span class="line">  jmxReporter: &#123;enabled: true&#125;,</span><br><span class="line">  slf4jReporter: &#123;enabled: true, interval: 180000&#125;,</span><br><span class="line">  graphiteReporter: &#123;enabled: false, interval: 180000&#125;&#125;</span><br><span class="line">maxInitialLineLength: 4096</span><br><span class="line">maxHeaderSize: 8192</span><br><span class="line">maxChunkSize: 8192</span><br><span class="line">maxContentLength: 65536</span><br><span class="line">maxAccumulationBufferComponents: 1024</span><br><span class="line">resultIterationBatchSize: 64</span><br><span class="line">writeBufferLowWaterMark: 32768</span><br><span class="line">writeBufferHighWaterMark: 65536</span><br></pre></td></tr></table></figure>
+
+<p>janusgraph-hbase-es.properties 配置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">gremlin.graph=org.janusgraph.core.JanusGraphFactory</span><br><span class="line">storage.backend=hbase</span><br><span class="line">storage.hostname=127.0.0.1:2181</span><br><span class="line">cache.db-cache = true</span><br><span class="line">cache.db-cache-clean-wait = 20</span><br><span class="line">cache.db-cache-time = 180000</span><br><span class="line">cache.db-cache-size = 0.5</span><br><span class="line">storage.hbase.table=apache_atlas_janus</span><br><span class="line">storage.hbase.ext.hbase.security.authentication=kerberos</span><br><span class="line">storage.hbase.ext.hbase.security.authorization=true</span><br><span class="line"></span><br><span class="line">index.search.backend=elasticsearch</span><br><span class="line">index.search.hostname=127.0.0.1:9200</span><br></pre></td></tr></table></figure>
+
+<p>将 HBASE_CONF_DIR 加入 gramlin-server classpath 中（避免 kerberos 认证，连接失败等问题）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># vim gremlin-server.sh</span><br><span class="line">CP=&quot;$GREMLIN_HOME/conf/:$HBASE_CONF_DIR&quot;</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>启动 gramlin server</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup bin/gremlin-server.sh conf/gremlin-server-atlas-wshttp.yaml &gt; gramlin-server.log 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="Gremlin-Console"><a href="#Gremlin-Console" class="headerlink" title="Gremlin Console"></a>Gremlin Console</h3><ol>
+<li>下载并解压 gremlin console ，启动</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/gremlin.sh</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>连接 gremlin server</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">:remote connect tinkerpop.server conf/remote.yaml session</span><br><span class="line">:remote console</span><br></pre></td></tr></table></figure>
+
+<h3 id="Gremlin-Console-操作"><a href="#Gremlin-Console-操作" class="headerlink" title="Gremlin Console 操作"></a>Gremlin Console 操作</h3><img src="/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/console.png" class="" title="[Gremlin Console]">
+
+<p>查询一个 hive_table 节点</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// hive_table where qualifiedName = &quot;aaa.test@test&quot;</span><br><span class="line">g = graph.traversal()</span><br><span class="line">g.V().has(&quot;__typeName&quot;, &quot;hive_table&quot;).has(&quot;Referenceable.qualifiedName&quot;, &quot;aaa.test@test&quot;).values()</span><br></pre></td></tr></table></figure>
+
+<p>查看 Graph 的一些信息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mgmt = graph.openManagement()</span><br><span class="line"></span><br><span class="line">mgmt.printVertexLabels()	// 打印 VertexLabels 信息</span><br><span class="line">mgmt.printEdgeLabels()		// 打印 EdgeLabels 信息</span><br><span class="line">mgmt.printPropertyKeys()	// 打印 PropertyKeys 信息</span><br><span class="line">mgmt.printIndexes()			// 打印所有索引信息</span><br><span class="line"></span><br><span class="line">mgmt.printSchema()    // 打印 Schema，包括上面的所有信息</span><br><span class="line"></span><br><span class="line">index = mgmt.getGraphIndex(&quot;vertex_index&quot;);  // 获取索引对象</span><br></pre></td></tr></table></figure>
+
+<p>查询 Patch 节点信息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">g.V().has(&quot;patch.type&quot;, &quot;TYPEDEF_PATCH&quot;)</span><br><span class="line"></span><br><span class="line">g.V().has(&quot;patch.type&quot;, &quot;JAVA_PATCH&quot;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Graphexp-安装"><a href="#Graphexp-安装" class="headerlink" title="Graphexp 安装"></a>Graphexp 安装</h3><img src="/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/graphexp.png" class="" title="[Graphexp]">
+
+<p>Graphexp 是一个前端项目，结合 gremlin server 提供图数据的可视化。项目地址：<a target="_blank" rel="noopener" href="https://github.com/bricaud/graphexp">https://github.com/bricaud/graphexp</a></p>
+<p>拉取 github 代码，安装 Nginx 并进行如下配置。完成后访问：<a target="_blank" rel="noopener" href="http://localhost:9990/graphexp.html">http://localhost:9990/graphexp.html</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># vim /etc/nginx/conf.d/graphexp-9990.conf</span><br><span class="line">server &#123;</span><br><span class="line">	keepalive_requests 120; #单连接请求上限次数。</span><br><span class="line">	listen       9990;   #监听端口</span><br><span class="line">	location  ~*^.+$ &#123;       #请求的url过滤，正则匹配，~为区分大小写，~*为不区分大小写。</span><br><span class="line">	   root /data/nginx/graphexp;  #插件目录</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="其他问题"><a href="#其他问题" class="headerlink" title="其他问题"></a>其他问题</h3><ol>
+<li>Max frame length of 65536 has been exceeded.</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># io.netty.handler.codec.http.websocketx.CorruptedWebSocketFrameException: Max frame length of 65536 has been exceeded.</span><br><span class="line"># vim conf/remote.yaml</span><br><span class="line">connectionPool: &#123;maxContentLength: 655360&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2020/11/01/Linkis-%E6%96%B0%E5%BC%95%E6%93%8E%E5%AE%9E%E7%8E%B0%E5%88%86%E4%BA%AB/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1507,163 +1680,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2019/12/11/%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%EF%BC%88%E8%BD%AC%E8%BD%BD%EF%BC%89/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/12/11/%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%EF%BC%88%E8%BD%AC%E8%BD%BD%EF%BC%89/" itemprop="url">声明式编程和命令式编程（转载）</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-12-11T11:14:03+08:00">
-                2019-12-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="声明式编程和命令式编程（转载）"><a href="#声明式编程和命令式编程（转载）" class="headerlink" title="声明式编程和命令式编程（转载）"></a>声明式编程和命令式编程（转载）</h2><p>原文地址：<a target="_blank" rel="noopener" href="http://www.aqee.net/post/imperative-vs-declarative.html">声明式编程和命令式编程的比较</a></p>
-<h3 id="先统一一下概念，我们有两种编程方式：命令式和声明式。"><a href="#先统一一下概念，我们有两种编程方式：命令式和声明式。" class="headerlink" title="先统一一下概念，我们有两种编程方式：命令式和声明式。"></a>先统一一下概念，我们有两种编程方式：命令式和声明式。</h3><p>我们可以像下面这样定义它们之间的不同：</p>
-<ul>
-<li>命令式编程：命令“机器”如何去做事情(how)，这样不管你想要的是什么(what)，它都会按照你的命令实现。</li>
-<li>声明式编程：告诉“机器”你想要的是什么(what)，让机器想出如何去做(how)。</li>
-</ul>
-<img src="/2019/12/11/%E5%A3%B0%E6%98%8E%E5%BC%8F%E7%BC%96%E7%A8%8B%E5%92%8C%E5%91%BD%E4%BB%A4%E5%BC%8F%E7%BC%96%E7%A8%8B%EF%BC%88%E8%BD%AC%E8%BD%BD%EF%BC%89/Imperative-vs-Declarative.png" class="" title="[Imperative-vs-Declarative]">
-
-<h3 id="声明式编程和命令式编程的代码例子"><a href="#声明式编程和命令式编程的代码例子" class="headerlink" title="声明式编程和命令式编程的代码例子"></a>声明式编程和命令式编程的代码例子</h3><p>举个简单的例子，假设我们想让一个数组里的数值翻倍。</p>
-<p>我们用命令式编程风格实现，像下面这样：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">var numbers = [1,2,3,4,5]</span><br><span class="line"></span><br><span class="line">var doubled = []</span><br><span class="line"></span><br><span class="line">for(var i = 0; i &lt; numbers.length; i++) &#123;</span><br><span class="line">  var newNumber = numbers[i] * 2</span><br><span class="line">  doubled.push(newNumber)</span><br><span class="line">&#125;</span><br><span class="line">console.log(doubled) //=&gt; [2,4,6,8,10]</span><br></pre></td></tr></table></figure>
-
-<p>我们直接遍历整个数组，取出每个元素，乘以二，然后把翻倍后的值放入新数组，每次都要操作这个双倍数组，直到计算完所有元素。</p>
-<p>而使用声明式编程方法，我们可以用 Array.map 函数，像下面这样：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">var numbers = [1,2,3,4,5]</span><br><span class="line"></span><br><span class="line">var doubled = numbers.map(function(n) &#123;</span><br><span class="line">  return n * 2</span><br><span class="line">&#125;)</span><br><span class="line">console.log(doubled) //=&gt; [2,4,6,8,10]</span><br></pre></td></tr></table></figure>
-
-<p>map 利用当前的数组创建了一个新数组，新数组里的每个元素都是经过了传入map的函数(这里是function(n) { return n*2 })的处理。</p>
-<p>map函数所作的事情是将直接遍历整个数组的过程归纳抽离出来，让我们专注于描述我们想要的是什么(what)。注意，我们传入map的是一个纯函数；它不具有任何副作用(不会改变外部状态)，它只是接收一个数字，返回乘以二后的值。</p>
-<p>在一些具有函数式编程特征的语言里，对于list数据类型的操作，还有一些其他常用的声明式的函数方法。例如，求一个list里所有值的和，命令式编程会这样做：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">var numbers = [1,2,3,4,5]</span><br><span class="line"></span><br><span class="line">var total = 0</span><br><span class="line"></span><br><span class="line">for(var i = 0; i &lt; numbers.length; i++) &#123;</span><br><span class="line">  total += numbers[i]</span><br><span class="line">&#125;</span><br><span class="line">console.log(total) //=&gt; 15</span><br></pre></td></tr></table></figure>
-
-<p>而在声明式编程方式里，我们使用 reduce 函数：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">var numbers = [1,2,3,4,5]</span><br><span class="line"></span><br><span class="line">var total = numbers.reduce(function(sum, n) &#123;</span><br><span class="line">  return sum + n</span><br><span class="line">&#125;);</span><br><span class="line">console.log(total) //=&gt; 15</span><br></pre></td></tr></table></figure>
-
-<p>reduce 函数利用传入的函数把一个 list 运算成一个值。它以这个函数为参数，数组里的每个元素都要经过它的处理。每一次调用，第一个参数(这里是sum)都是这个函数处理前一个值时返回的结果，而第二个参数(n)就是当前元素。这样下来，每此处理的新元素都会合计到sum中，最终我们得到的是整个数组的和。</p>
-<p>同样，reduce 函数归纳抽离了我们如何遍历数组和状态管理部分的实现，提供给我们一个通用的方式来把一个 list 合并成一个值。我们需要做的只是指明我们想要的是什么？</p>
-<h3 id="声明式编程语言：SQL"><a href="#声明式编程语言：SQL" class="headerlink" title="声明式编程语言：SQL"></a>声明式编程语言：SQL</h3><p>也许你还不能明白，但有一个地方，你也许已经用到了声明式编程，那就是SQL。</p>
-<p>你可以把SQL当做一个处理数据的声明式查询语言。完全用SQL写一个应用程序？这不可能。但如果是处理相互关联的数据集，它就显的无比强大了。</p>
-<p>像下面这样的查询语句：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT * from dogs</span><br><span class="line">INNER JOIN owners</span><br><span class="line"></span><br><span class="line">WHERE dogs.owner_id = owners.id</span><br></pre></td></tr></table></figure>
-
-<p>如果我们用命令式编程方式实现这段逻辑：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">//dogs = [&#123;name: &#x27;Fido&#x27;, owner_id: 1&#125;, &#123;...&#125;, ... ]</span><br><span class="line">//owners = [&#123;id: 1, name: &#x27;Bob&#x27;&#125;, &#123;...&#125;, ...]</span><br><span class="line"></span><br><span class="line">var dogsWithOwners = []</span><br><span class="line">var dog, owner</span><br><span class="line"></span><br><span class="line">for(var di=0; di &lt; dogs.length; di++) &#123;</span><br><span class="line">  dog = dogs[di]</span><br><span class="line"></span><br><span class="line">  for(var oi=0; oi &lt; owners.length; oi++) &#123;</span><br><span class="line">    owner = owners[oi]</span><br><span class="line">    if (owner &amp;&amp; dog.owner_id == owner.id) &#123;</span><br><span class="line">      dogsWithOwners.push(&#123;</span><br><span class="line">        dog: dog,</span><br><span class="line">        owner: owner</span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我可没说SQL是一种很容易懂的语言，也没说一眼就能把它们看明白，但基本上还是很整洁的。</p>
-<p>SQL代码不仅很短，不不仅容易读懂，它还有更大的优势。因为我们归纳抽离了how，我们就可以专注于what，让数据库来帮我们优化how.</p>
-<p>我们的命令式编程代码会运行的很慢，因为需要遍历所有 list 里的每个狗的主人。</p>
-<p>而SQL例子里我们可以让数据库来处理how，来替我们去找我们想要的数据。如果需要用到索引(假设我们建了索引)，数据库知道如何使用索引，这样性能又有了大的提升。如果在此不久之前它执行过相同的查询，它也许会从缓存里立即找到。通过放手how，让机器来做这些有难度的事，我们不需要掌握数据库原理就能轻松的完成任务。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1714,7 +1730,7 @@
               
                 <a href="/archives/%7C%7C%20archive">
               
-                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-count">45</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1727,7 +1743,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-count">28</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

@@ -251,6 +251,166 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/" itemprop="url">Redis 发布订阅</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-11-06T16:05:35+08:00">
+                2018-11-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Redis-发布订阅"><a href="#Redis-发布订阅" class="headerlink" title="Redis 发布订阅"></a>Redis 发布订阅</h2><p>Redis 发布订阅(pub&#x2F;sub)是一种消息通信模式：发送者(pub)发送消息，订阅者(sub)接收消息。Redis 客户端可以订阅任意数量的 channel。</p>
+<p>下图展示了频道 channel1 ， 以及订阅这个频道的三个客户端 —— client2 、 client5 和 client1 之间的关系：</p>
+<img src="/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/pubsub1.png" class="" title="[pubsub1]">
+
+<p>当有新消息通过 PUBLISH 命令发送给频道 channel1 时， 这个消息就会被发送给订阅它的三个客户端：</p>
+<img src="/2018/11/06/Redis-%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85/pubsub2.png" class="" title="[pubsub2]">
+
+<h2 id="Redis-发布订阅命令"><a href="#Redis-发布订阅命令" class="headerlink" title="Redis 发布订阅命令"></a>Redis 发布订阅命令</h2><blockquote>
+<p>SUBSCRIBE channel [channel …] </p>
+</blockquote>
+<p>订阅一个或多个 channel</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6380&gt; SUBSCRIBE testChannel</span><br><span class="line">Reading messages... (press Ctrl-C to quit)</span><br><span class="line">1) &quot;subscribe&quot;</span><br><span class="line">2) &quot;testChannel&quot;</span><br><span class="line">3) (integer) 1</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>UNSUBSCRIBE [channel [channel …]] </p>
+</blockquote>
+<p>退订一个或多个 channel</p>
+<blockquote>
+<p>PSUBSCRIBE pattern [pattern …] </p>
+</blockquote>
+<p>订阅所有匹配一个或多个 pattern 的 channel</p>
+<blockquote>
+<p>PUNSUBSCRIBE [pattern [pattern …]] </p>
+</blockquote>
+<p>退订所有匹配一个或多个 pattern 的 channel</p>
+<blockquote>
+<p>PUBLISH channel message </p>
+</blockquote>
+<p>发布消息到指定的 channel</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># 打开一个新的控制台发布消息到 testChannel</span><br><span class="line">127.0.0.1:6380&gt; publish testChannel &quot;test&quot;</span><br><span class="line">(integer) 1</span><br><span class="line">127.0.0.1:6380&gt; publish testChannel &quot;test2&quot;</span><br><span class="line">(integer) 1</span><br><span class="line"></span><br><span class="line"># 查看订阅 testChannel 的控制台</span><br><span class="line">127.0.0.1:6380&gt; SUBSCRIBE testChannel</span><br><span class="line">Reading messages... (press Ctrl-C to quit)</span><br><span class="line">1) &quot;subscribe&quot;</span><br><span class="line">2) &quot;testChannel&quot;</span><br><span class="line">3) (integer) 1</span><br><span class="line">1) &quot;message&quot;</span><br><span class="line">2) &quot;testChannel&quot;</span><br><span class="line">3) &quot;test&quot;</span><br><span class="line">1) &quot;message&quot;</span><br><span class="line">2) &quot;testChannel&quot;</span><br><span class="line">3) &quot;test2&quot;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>PUBSUB subcommand [argument [argument …]] </p>
+</blockquote>
+<p>查看订阅与发布系统状态。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6380&gt; PUBSUB channels</span><br><span class="line">1) &quot;testChannel&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Java-实现-Redis-发布订阅"><a href="#Java-实现-Redis-发布订阅" class="headerlink" title="Java 实现 Redis 发布订阅"></a>Java 实现 Redis 发布订阅</h2><p>JavaApi 向 channel 发送消息可以直接调用 Jedis 的 publish(final String channel, final String message) 方法。订阅 channel 则需要调用 Jedis 的 subscribe(final JedisPubSub jedisPubSub, final String… channels)方法，并实现 JedisPubSub 类的 onMessage() 方法来处理消息。<br>Jedis 的 subscribe() 方法中调用了 JedisPubSub 的 proceed()方法，proceed()方法中订阅 channels 并调用了 process() 方法。process() 方法会一直循环调用 onMessage() 方法处理消息。所以使用 subscribe() 方法时，一般开启新的线程进行订阅，要不然 subscribe() 方法后面的代码不会执行。<br>下面是 JedisPubSub  proceed()方法和 process() 方法的实现：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">public void proceed(Client client, String... channels) &#123;</span><br><span class="line">    this.client = client;</span><br><span class="line">    client.subscribe(channels);</span><br><span class="line">    client.flush();</span><br><span class="line">    process(client);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  private void process(Client client) &#123;</span><br><span class="line"></span><br><span class="line">    do &#123;</span><br><span class="line">      List&lt;Object&gt; reply = client.getRawObjectMultiBulkReply();</span><br><span class="line">      final Object firstObj = reply.get(0);</span><br><span class="line">      if (!(firstObj instanceof byte[])) &#123;</span><br><span class="line">        throw new JedisException(&quot;Unknown message type: &quot; + firstObj);</span><br><span class="line">      &#125;</span><br><span class="line">      final byte[] resp = (byte[]) firstObj;</span><br><span class="line">      if (Arrays.equals(SUBSCRIBE.raw, resp)) &#123;</span><br><span class="line">        subscribedChannels = ((Long) reply.get(2)).intValue();</span><br><span class="line">        final byte[] bchannel = (byte[]) reply.get(1);</span><br><span class="line">        final String strchannel = (bchannel == null) ? null : SafeEncoder.encode(bchannel);</span><br><span class="line">        onSubscribe(strchannel, subscribedChannels);</span><br><span class="line">      &#125; else if (Arrays.equals(UNSUBSCRIBE.raw, resp)) &#123;</span><br><span class="line">        subscribedChannels = ((Long) reply.get(2)).intValue();</span><br><span class="line">        final byte[] bchannel = (byte[]) reply.get(1);</span><br><span class="line">        final String strchannel = (bchannel == null) ? null : SafeEncoder.encode(bchannel);</span><br><span class="line">        onUnsubscribe(strchannel, subscribedChannels);</span><br><span class="line">      &#125; else if (Arrays.equals(MESSAGE.raw, resp)) &#123;</span><br><span class="line">        final byte[] bchannel = (byte[]) reply.get(1);</span><br><span class="line">        final byte[] bmesg = (byte[]) reply.get(2);</span><br><span class="line">        final String strchannel = (bchannel == null) ? null : SafeEncoder.encode(bchannel);</span><br><span class="line">        final String strmesg = (bmesg == null) ? null : SafeEncoder.encode(bmesg);</span><br><span class="line">        onMessage(strchannel, strmesg);</span><br><span class="line">      &#125; else if (Arrays.equals(PMESSAGE.raw, resp)) &#123;</span><br><span class="line">        final byte[] bpattern = (byte[]) reply.get(1);</span><br><span class="line">        final byte[] bchannel = (byte[]) reply.get(2);</span><br><span class="line">        final byte[] bmesg = (byte[]) reply.get(3);</span><br><span class="line">        final String strpattern = (bpattern == null) ? null : SafeEncoder.encode(bpattern);</span><br><span class="line">        final String strchannel = (bchannel == null) ? null : SafeEncoder.encode(bchannel);</span><br><span class="line">        final String strmesg = (bmesg == null) ? null : SafeEncoder.encode(bmesg);</span><br><span class="line">        onPMessage(strpattern, strchannel, strmesg);</span><br><span class="line">      &#125; else if (Arrays.equals(PSUBSCRIBE.raw, resp)) &#123;</span><br><span class="line">        subscribedChannels = ((Long) reply.get(2)).intValue();</span><br><span class="line">        final byte[] bpattern = (byte[]) reply.get(1);</span><br><span class="line">        final String strpattern = (bpattern == null) ? null : SafeEncoder.encode(bpattern);</span><br><span class="line">        onPSubscribe(strpattern, subscribedChannels);</span><br><span class="line">      &#125; else if (Arrays.equals(PUNSUBSCRIBE.raw, resp)) &#123;</span><br><span class="line">        subscribedChannels = ((Long) reply.get(2)).intValue();</span><br><span class="line">        final byte[] bpattern = (byte[]) reply.get(1);</span><br><span class="line">        final String strpattern = (bpattern == null) ? null : SafeEncoder.encode(bpattern);</span><br><span class="line">        onPUnsubscribe(strpattern, subscribedChannels);</span><br><span class="line">      &#125; else if (Arrays.equals(PONG.raw, resp)) &#123;</span><br><span class="line">        final byte[] bpattern = (byte[]) reply.get(1);</span><br><span class="line">        final String strpattern = (bpattern == null) ? null : SafeEncoder.encode(bpattern);</span><br><span class="line">        onPong(strpattern);</span><br><span class="line">      &#125; else &#123;</span><br><span class="line">        throw new JedisException(&quot;Unknown message type: &quot; + firstObj);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; while (isSubscribed());</span><br></pre></td></tr></table></figure>
+
+<p>下面是一个简单的实现发布的订阅模式的代码，github地址：<a target="_blank" rel="noopener" href="https://github.com/wForget/ClientUtil/blob/master/src/main/java/cn/wangz/clientutil/redis/pubsub/PubsubDemo.java">PubsubDemo.java</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line">public class PubsubDemo &#123;</span><br><span class="line"></span><br><span class="line">    private final String ip;</span><br><span class="line">    private final int port;</span><br><span class="line">    private final String channel;</span><br><span class="line">    private final JedisPool jedisPool;</span><br><span class="line"></span><br><span class="line">    public PubsubDemo(String ip, int port, String channel) &#123;</span><br><span class="line">        this.ip = ip;</span><br><span class="line">        this.port = port;</span><br><span class="line">        this.channel = channel;</span><br><span class="line">        JedisPoolConfig config = new JedisPoolConfig();</span><br><span class="line">        jedisPool = new JedisPool(config, ip, port);    // 初始化JedisPool</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * Subscribe 订阅线程</span><br><span class="line">     * 订阅 channel，并打印接收到的消息</span><br><span class="line">     */</span><br><span class="line">    class Subscribe implements Runnable &#123;</span><br><span class="line"></span><br><span class="line">        @Override</span><br><span class="line">        public void run() &#123;</span><br><span class="line">            Jedis jedis = null;</span><br><span class="line">            try &#123;</span><br><span class="line">                jedis = jedisPool.getResource();</span><br><span class="line">                jedis.subscribe(new JedisPubSub() &#123;</span><br><span class="line">                    @Override</span><br><span class="line">                    public void onMessage(String channel, String message) &#123;</span><br><span class="line">                        System.out.println(&quot;receive message[ channel: &quot; + channel + &quot;, message: &quot; + message + &quot;]&quot;);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;, channel);</span><br><span class="line">            &#125; finally &#123;</span><br><span class="line">                if (jedis != null) &#123;</span><br><span class="line">                    jedis.close();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * Publish 发布线程</span><br><span class="line">     * 向 channel 中每秒发送一个递增的数</span><br><span class="line">     */</span><br><span class="line">    class Publish implements Runnable &#123;</span><br><span class="line"></span><br><span class="line">        @Override</span><br><span class="line">        public void run() &#123;</span><br><span class="line">            Jedis jedis = null;</span><br><span class="line">            try &#123;</span><br><span class="line">                jedis = jedisPool.getResource();</span><br><span class="line">                int i = 0;</span><br><span class="line">                while (true) &#123;</span><br><span class="line">                    jedis.publish(channel, String.valueOf(i++));</span><br><span class="line">                    Thread.sleep(1000);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; catch (Exception e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125; finally &#123;</span><br><span class="line">                if (jedis != null) &#123;</span><br><span class="line">                    jedis.close();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 启动方法</span><br><span class="line">    public void run() throws Exception &#123;</span><br><span class="line">        // 启动一个 Subscribe 订阅线程</span><br><span class="line">        Thread subscribeThread = new Thread(new Subscribe(), &quot;SubscribeThread&quot;);</span><br><span class="line">        subscribeThread.start();</span><br><span class="line"></span><br><span class="line">        // 启动一个 Publish 发布线程</span><br><span class="line">        Thread publishThread = new Thread(new Publish(), &quot;PublishThread&quot;);</span><br><span class="line">        publishThread.start();</span><br><span class="line"></span><br><span class="line">        publishThread.join();</span><br><span class="line">        subscribeThread.join();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) throws Exception &#123;</span><br><span class="line">        final String ip = &quot;192.168.1.153&quot;;</span><br><span class="line">        final int port = 6380;</span><br><span class="line">        final String channel = &quot;testChannel&quot;;</span><br><span class="line"></span><br><span class="line">        PubsubDemo pubsub = new PubsubDemo(ip, port, channel);</span><br><span class="line">        pubsub.run();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/10/16/Kafka%E6%A6%82%E8%BF%B0/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1675,133 +1835,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2018/09/25/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%BA%94%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Channel/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/25/%E3%80%8AFlume%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E3%80%8B-%E4%BA%94%E3%80%81Flume%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E4%B9%8BFlume-Channel/" itemprop="url">《Flume系列文章》 五、Flume源码分析之Flume-Channel</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2018-09-25T17:50:10+08:00">
-                2018-09-25
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Flume-Channel"><a href="#Flume-Channel" class="headerlink" title="Flume Channel"></a>Flume Channel</h2><p>AbstractConfigurationProvider的loadChannels()方法，加载配置文件中Channel的配置。loadChannels()中调用getOrCreateChannel()方法，通过DefaultChannelFactory.create()根据type创建不同的Channel。Flume目前实现的Channel有：Memory Channel、JDBC Channel、Kafka Channel、File Channel、Spillable Memory Channel(events存储在内存或磁盘上(溢出的时候)，试验阶段不建议生成环境使用)，具体配置参考：<a target="_blank" rel="noopener" href="http://flume.apache.org/FlumeUserGuide.html#flume-channels">http://flume.apache.org/FlumeUserGuide.html#flume-channels</a>。</p>
-<h2 id="Memory-Channel"><a href="#Memory-Channel" class="headerlink" title="Memory Channel"></a>Memory Channel</h2><p>这里具体对Memory Channel源码进行分析，学习一下Channel中事务机制的实现。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">private Object queueLock = new Object();		//用于锁定queue</span><br><span class="line">@GuardedBy(value = &quot;queueLock&quot;)</span><br><span class="line">private LinkedBlockingDeque&lt;Event&gt; queue;		//Channel中存放events的队列</span><br><span class="line"></span><br><span class="line">private Semaphore queueStored;	//用于控制put和take操作的信号量，初始值为0，put操作release添加许可证，take操作tryAcquire请求许可证</span><br><span class="line"></span><br><span class="line">private Semaphore queueRemaining;	//用于控制Channel中最大event数的信号量，初始值为capacity配置。</span><br><span class="line"></span><br><span class="line">private Semaphore bytesRemaining;	//用于控制Channel中最大字节数的信号量，初始值为byteCapacity配置。</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>MemoryTransaction</p>
-</blockquote>
-<p>前面的文章中可以知道，Source是通过ChannelProcessor.processEventBatch()向Channel中put events，Sink在process()中从Channel中take events。Channel对Event具体的操作是通过MemoryTransaction实现的，MemoryTransaction中定义了两个LinkedBlockingDeque(阻塞双端队列)，takeList和putList，用来缓存一次事务中take或者put操作的events。putByteCounter和takeByteCounter对象是对events的bytes计数。<br>Channel事务中定义了put、take、commit、rollback四个操作。具体的实现：<br>put操作把event put到putList中；<br>take操作从queue中take event到takeList中，并返回event；<br>commit操作将putList里面events put到queue中，并清空takeList；<br>rollback操作是将takeList里面的events put回queue中，并清空putList。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br></pre></td><td class="code"><pre><span class="line">private class MemoryTransaction extends BasicTransactionSemantics &#123;</span><br><span class="line">  private LinkedBlockingDeque&lt;Event&gt; takeList;  //存放take操作的events</span><br><span class="line">  private LinkedBlockingDeque&lt;Event&gt; putList;   //存放put操作的events</span><br><span class="line">  private final ChannelCounter channelCounter;  //channel counter（监控）</span><br><span class="line">  private int putByteCounter = 0;   //put events的总bytes</span><br><span class="line">  private int takeByteCounter = 0;  //take events的总bytes</span><br><span class="line"></span><br><span class="line">  public MemoryTransaction(int transCapacity, ChannelCounter counter) &#123;</span><br><span class="line">    //transCapacity 是一次事务中操作events的最大数量</span><br><span class="line">    putList = new LinkedBlockingDeque&lt;Event&gt;(transCapacity);</span><br><span class="line">    takeList = new LinkedBlockingDeque&lt;Event&gt;(transCapacity);</span><br><span class="line"></span><br><span class="line">    channelCounter = counter;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  //put操作是把event put到putList中</span><br><span class="line">  @Override</span><br><span class="line">  protected void doPut(Event event) throws InterruptedException &#123;</span><br><span class="line">    channelCounter.incrementEventPutAttemptCount();</span><br><span class="line">    int eventByteSize = (int) Math.ceil(estimateEventSize(event) / byteCapacitySlotSize);</span><br><span class="line"></span><br><span class="line">    if (!putList.offer(event)) &#123;  //向putList中offer event，满了的话抛出异常</span><br><span class="line">      throw new ChannelException(</span><br><span class="line">          &quot;Put queue for MemoryTransaction of capacity &quot; +</span><br><span class="line">          putList.size() + &quot; full, consider committing more frequently, &quot; +</span><br><span class="line">          &quot;increasing capacity or increasing thread count&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    putByteCounter += eventByteSize;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  //take操作是从channel 的 events queue中take event到takeList中</span><br><span class="line">  @Override</span><br><span class="line">  protected Event doTake() throws InterruptedException &#123;</span><br><span class="line">    channelCounter.incrementEventTakeAttemptCount();</span><br><span class="line">    if (takeList.remainingCapacity() == 0) &#123;  //takeList满了的话抛出异常</span><br><span class="line">      throw new ChannelException(&quot;Take list for MemoryTransaction, capacity &quot; +</span><br><span class="line">          takeList.size() + &quot; full, consider committing more frequently, &quot; +</span><br><span class="line">          &quot;increasing capacity, or increasing thread count&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    if (!queueStored.tryAcquire(keepAlive, TimeUnit.SECONDS)) &#123;   //请求许可</span><br><span class="line">      return null;</span><br><span class="line">    &#125;</span><br><span class="line">    Event event;</span><br><span class="line">    synchronized (queueLock) &#123;  //锁定queue，poll一个event</span><br><span class="line">      event = queue.poll();</span><br><span class="line">    &#125;</span><br><span class="line">    Preconditions.checkNotNull(event, &quot;Queue.poll returned NULL despite semaphore &quot; +</span><br><span class="line">        &quot;signalling existence of entry&quot;);</span><br><span class="line">    takeList.put(event);  //将event存入takeList</span><br><span class="line"></span><br><span class="line">    int eventByteSize = (int) Math.ceil(estimateEventSize(event) / byteCapacitySlotSize);</span><br><span class="line">    takeByteCounter += eventByteSize;</span><br><span class="line"></span><br><span class="line">    return event;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  //commit操作是将putList里面events put到queue中，并清空takeList</span><br><span class="line">  @Override</span><br><span class="line">  protected void doCommit() throws InterruptedException &#123;</span><br><span class="line">    int remainingChange = takeList.size() - putList.size();</span><br><span class="line">    if (remainingChange &lt; 0) &#123;</span><br><span class="line">      //判断put到queue中是否会导致，channel中最大字节数操作byteCapacity</span><br><span class="line">      if (!bytesRemaining.tryAcquire(putByteCounter, keepAlive, TimeUnit.SECONDS)) &#123;</span><br><span class="line">        throw new ChannelException(&quot;Cannot commit transaction. Byte capacity &quot; +</span><br><span class="line">            &quot;allocated to store event body &quot; + byteCapacity * byteCapacitySlotSize +</span><br><span class="line">            &quot;reached. Please increase heap space/byte capacity allocated to &quot; +</span><br><span class="line">            &quot;the channel as the sinks may not be keeping up with the sources&quot;);</span><br><span class="line">      &#125;</span><br><span class="line">      //判断提交本次事务是否会导致channel中的events的数量超过capacity</span><br><span class="line">      if (!queueRemaining.tryAcquire(-remainingChange, keepAlive, TimeUnit.SECONDS)) &#123;</span><br><span class="line">        bytesRemaining.release(putByteCounter);</span><br><span class="line">        throw new ChannelFullException(&quot;Space for commit to queue couldn&#x27;t be acquired.&quot; +</span><br><span class="line">            &quot; Sinks are likely not keeping up with sources, or the buffer size is too tight&quot;);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    int puts = putList.size();</span><br><span class="line">    int takes = takeList.size();</span><br><span class="line">    synchronized (queueLock) &#123;  //将putList里面events put到queue中，并清空takeList</span><br><span class="line">      if (puts &gt; 0) &#123;</span><br><span class="line">        while (!putList.isEmpty()) &#123;</span><br><span class="line">          if (!queue.offer(putList.removeFirst())) &#123;</span><br><span class="line">            throw new RuntimeException(&quot;Queue add failed, this shouldn&#x27;t be able to happen&quot;);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      putList.clear();</span><br><span class="line">      takeList.clear();</span><br><span class="line">    &#125;</span><br><span class="line">    bytesRemaining.release(takeByteCounter);</span><br><span class="line">    takeByteCounter = 0;</span><br><span class="line">    putByteCounter = 0;</span><br><span class="line"></span><br><span class="line">    queueStored.release(puts);</span><br><span class="line">    if (remainingChange &gt; 0) &#123;</span><br><span class="line">      queueRemaining.release(remainingChange);</span><br><span class="line">    &#125;</span><br><span class="line">    if (puts &gt; 0) &#123;</span><br><span class="line">      channelCounter.addToEventPutSuccessCount(puts);</span><br><span class="line">    &#125;</span><br><span class="line">    if (takes &gt; 0) &#123;</span><br><span class="line">      channelCounter.addToEventTakeSuccessCount(takes);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    channelCounter.setChannelSize(queue.size());</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  //rollback操作是将takeList里面的events put回queue中，并清空putList</span><br><span class="line">  @Override</span><br><span class="line">  protected void doRollback() &#123;</span><br><span class="line">    int takes = takeList.size();</span><br><span class="line">    synchronized (queueLock) &#123;</span><br><span class="line">      Preconditions.checkState(queue.remainingCapacity() &gt;= takeList.size(),</span><br><span class="line">          &quot;Not enough space in memory channel &quot; +</span><br><span class="line">          &quot;queue to rollback takes. This should never happen, please report&quot;);</span><br><span class="line">      while (!takeList.isEmpty()) &#123;</span><br><span class="line">        queue.addFirst(takeList.removeLast());</span><br><span class="line">      &#125;</span><br><span class="line">      putList.clear();</span><br><span class="line">    &#125;</span><br><span class="line">    putByteCounter = 0;</span><br><span class="line">    takeByteCounter = 0;</span><br><span class="line"></span><br><span class="line">    queueStored.release(takes);</span><br><span class="line">    channelCounter.setChannelSize(queue.size());</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1852,7 +1885,7 @@
               
                 <a href="/archives/%7C%7C%20archive">
               
-                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-count">45</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -1865,7 +1898,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-count">28</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

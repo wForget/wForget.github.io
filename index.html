@@ -251,6 +251,151 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2022/11/07/Spark-SQL-%E5%88%86%E6%9E%90-Event-Log/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2022/11/07/Spark-SQL-%E5%88%86%E6%9E%90-Event-Log/" itemprop="url">Spark SQL 分析 Event Log</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2022-11-07T10:16:38+08:00">
+                2022-11-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="一、背景"><a href="#一、背景" class="headerlink" title="一、背景"></a>一、背景</h2><p>Spark 程序在运行时会会在 Driver 端产生一些事件并保存在 EventLog 中，Spark History Server 通过读取并 Replay 这些 Event 可以渲染出 Spark UI 页面，Spark UI 页面中包括了我们排查问题所需的大部分指标和统计信息。</p>
+<p>所以我们可以通过在 Spark Event Log 中提取一些关键信息，用于发现 Spark 的一些问题并进行优化，同时也可以对历史运行的任务进行统计，为一些优化效果提供数据支撑。</p>
+<h2 id="二、Spark-SQL-读取-Event-Log"><a href="#二、Spark-SQL-读取-Event-Log" class="headerlink" title="二、Spark SQL 读取 Event Log"></a>二、Spark SQL 读取 Event Log</h2><p>Spark 中 Event log 是通过 JSON 格式进行序列化写入文件中，所以我们可以直接使用 Spark JOSN File Datasource 方式直接读取 Event Log。</p>
+<h3 id="1、直接读取Event-Log"><a href="#1、直接读取Event-Log" class="headerlink" title="1、直接读取Event Log"></a>1、直接读取Event Log</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from `json`.`hdfs://rbf-bdxs-g1/system/spark/tmp/spark/logs/application_1663317691313_4806906_1` limit 10;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、为-EventLog-文件创建一下视图"><a href="#2、为-EventLog-文件创建一下视图" class="headerlink" title="2、为 EventLog 文件创建一下视图"></a>2、为 EventLog 文件创建一下视图</h3><p>参考：<a target="_blank" rel="noopener" href="https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-table-datasource.html">https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-table-datasource.html</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CREATE OR REPLACE TEMPORARY VIEW `application_1663317691313_4806906` (</span><br><span class="line">  `Event` String, `Job ID` String,</span><br><span class="line">  `Completion Time` String,</span><br><span class="line">  `Job Result` Struct&lt;`Result` String, `Exception` Struct&lt;`Message` String, `Stack Trace` String&gt;&gt;)</span><br><span class="line">  USING `json`</span><br><span class="line">  OPTIONS (path &#x27;hdfs://rbf-bdxs-g1/system/spark/tmp/spark/logs/application_1663317691313_4806906_1&#x27;);</span><br></pre></td></tr></table></figure>
+
+<h2 id="三、Hive-SQL-读取-EventLog"><a href="#三、Hive-SQL-读取-EventLog" class="headerlink" title="三、Hive SQL 读取 EventLog"></a>三、Hive SQL 读取 EventLog</h2><p>Hive 中可以通过配置 TEXTFILE  ‘org.apache.hadoop.hive.serde2.JsonSerDe’ 序列化方式的表也可以直接读取 JSON 文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">CREATE EXTERNAL TABLE IF NOT EXISTS `sample`.`spark_event_log`(</span><br><span class="line">  `Event` String,</span><br><span class="line">  `Job ID` String,</span><br><span class="line">  `Completion Time` String,</span><br><span class="line">  `Job Result` Struct&lt;`Result`: String, `Exception`: Struct&lt;`Message`: String, `Stack Trace`: String&gt;&gt;</span><br><span class="line">)</span><br><span class="line">ROW FORMAT SERDE &#x27;org.apache.hadoop.hive.serde2.JsonSerDe&#x27;</span><br><span class="line">STORED AS TEXTFILE</span><br><span class="line">LOCATION &#x27;hdfs://rbf-bdxs-g1/system/spark/tmp/spark/logs/application_1663317691313_4806906_1&#x27;;</span><br><span class="line"> </span><br><span class="line">select * from `sample`.`spark_event_log` limit 10;</span><br></pre></td></tr></table></figure>
+
+<h2 id="四、分区读取-Event-Log"><a href="#四、分区读取-Event-Log" class="headerlink" title="四、分区读取 Event Log"></a>四、分区读取 Event Log</h2><p>通过上面一些尝试，我们可以确定能够通过 Spark SQL、Hive SQL 来读取 Event Log 文件。</p>
+<p>不过由于所有的 Application 都写在同一个 Event Log 路径中，我们很难过滤部分 Application 的 EventLog，所以我们需要为 Event Log 添加一些分区，使得我们可以按照分区来过滤一些数据，不用每次都全量读取。</p>
+<h3 id="1、Load-Data-方式加载到-Hive-表中"><a href="#1、Load-Data-方式加载到-Hive-表中" class="headerlink" title="1、Load Data 方式加载到 Hive 表中"></a>1、Load Data 方式加载到 Hive 表中</h3><p>在 Hive 中创建一个分区表，然后通过 Load Data 方法将 Event Log 文件加载到对应的分区中，不过测试下来发现 Load data 命令会删除源文件。</p>
+<p>我们也可以直接将文件拷贝到表的分区目录中，再为表添加对应的分区，不过这种方式相当于对源文件多个一个备份。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">CREATE EXTERNAL TABLE IF NOT EXISTS `sample`.`spark_event_log_002`(</span><br><span class="line">  `Event` String,</span><br><span class="line">  `Job ID` String,</span><br><span class="line">  `Completion Time` String,</span><br><span class="line">  `Job Result` Struct&lt;`Result`: String, `Exception`: Struct&lt;`Message`: String, `Stack Trace`: String&gt;&gt;</span><br><span class="line">)</span><br><span class="line">PARTITIONED BY (dt String, app_id String)</span><br><span class="line">ROW FORMAT SERDE &#x27;org.apache.hadoop.hive.serde2.JsonSerDe&#x27;</span><br><span class="line">STORED AS TEXTFILE;</span><br><span class="line"> </span><br><span class="line">LOAD DATA INPATH &#x27;hdfs://rbf-bdxs-g1/system/spark/tmp/spark/logs/application_1663317691313_4373493_1&#x27; INTO TABLE `sample`.`spark_event_log_002` PARTITION (dt=&#x27;2022-10-31&#x27;,app_id=&#x27;application_1663317691313_4373493&#x27;);  --- 会删除源文件</span><br><span class="line"> </span><br><span class="line">select * from `sample`.`spark_event_log_002` limit 10;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、Spark-EventLog-Connector"><a href="#2、Spark-EventLog-Connector" class="headerlink" title="2、Spark EventLog Connector"></a>2、Spark EventLog Connector</h3><p>为了让 Spark SQL 直接读取 Event Log 文件，并且对 Event Log 添加分区信息，我通过 DataSourceV2 的方式实现一个 EventLog Catalog 和 Table，复用了 JsonTable 的大部分逻辑，并重写 JsonScan 的 partitions 逻辑。</p>
+<p>实现了直接通过 Catalog 读取 Event Log 并支持 dt、hour、app_id 三级分区。</p>
+<p>代码：<a target="_blank" rel="noopener" href="https://github.com/wForget/spark-connector-eventlog">https://github.com/wForget/spark-connector-eventlog</a></p>
+<p>具体使用：<a target="_blank" rel="noopener" href="https://github.com/wForget/spark-connector-eventlog/blob/main/README.md">https://github.com/wForget/spark-connector-eventlog/blob/main/README.md</a></p>
+<p><strong>配置 EventLog Catalog</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark.sql.catalog.eventlog=cn.wangz.spark.connector.eventlog.EventLogCatalog</span><br><span class="line">spark.sql.catalog.eventlog.eventLogDir=hdfs://namenode01/tmp/spark/logs</span><br></pre></td></tr></table></figure>
+
+<p><strong>访问 Event Log</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">// 可通过设置 maxPartitionBytes，控制每个 task 处理的数据量</span><br><span class="line">set spark.sql.files.maxPartitionBytes=1g</span><br><span class="line"></span><br><span class="line">// 查询表</span><br><span class="line">show tables in eventlog</span><br><span class="line"></span><br><span class="line">// 查询分区</span><br><span class="line">show partitions eventlog.spark_event_log</span><br><span class="line"></span><br><span class="line">// 查询 EventLog</span><br><span class="line">select * from eventlog.spark_event_log where dt = &#x27;2022-10-26&#x27;</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2022/10/18/Kyuubi-Zorder-%E8%B0%83%E7%A0%94%E6%B5%8B%E8%AF%95/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1825,179 +1970,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wForget's blog">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/" itemprop="url">Gremlin Server/Console 适配 Atlas JanusGraph</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2020-12-14T19:00:20+08:00">
-                2020-12-14
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="Gremlin-Server-x2F-Console-适配-Atlas-JanusGraph"><a href="#Gremlin-Server-x2F-Console-适配-Atlas-JanusGraph" class="headerlink" title="Gremlin Server&#x2F;Console 适配 Atlas JanusGraph"></a>Gremlin Server&#x2F;Console 适配 Atlas JanusGraph</h3><p>Atlas 底层存储使用的 JanusGraph，由于对于 Atlas 底层数据结构并不太清楚，所以希望能够通过 Gremlin Console 来操作 Atlas 的 JanusGraph，使用 Gremlin Query Language 执行一些更加灵活的查询，并直观的查询数据结构。适配的思路参考了 <a target="_blank" rel="noopener" href="https://github.com/sburn/docker-apache-atlas">docker-apache-atlas</a> 项目。</p>
-<h3 id="Gremlin-Server"><a href="#Gremlin-Server" class="headerlink" title="Gremlin Server"></a>Gremlin Server</h3><ol>
-<li>下载相同版本的 gremlin server ，解压，并添加 Atlas 相关的依赖包</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ATLAS_HOME=/home/anchor/apache-atlas-2.1.0/</span><br><span class="line">GREMLIN_SERVER_HOME=/home/anchor/gremlin/apache-tinkerpop-gremlin-server-3.4.6</span><br><span class="line">ln -s $&#123;ATLAS_HOME&#125;/server/webapp/atlas/WEB-INF/lib/*.jar $&#123;GREMLIN_SERVER_HOME&#125;/lib 2&gt;/dev/null</span><br><span class="line">rm -f $&#123;GREMLIN_SERVER_HOME&#125;/lib/atlas-webapp-2.1.0.jar</span><br><span class="line">rm -f $&#123;GREMLIN_SERVER_HOME&#125;/lib/netty-3.10.5.Final.jar</span><br><span class="line">rm -f $&#123;GREMLIN_SERVER_HOME&#125;/lib/netty-all-4.0.52.Final.jar</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>gremlin server 配置</li>
-</ol>
-<p>gremlin-server-atlas-wshttp.yaml 配置</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">host: 0.0.0.0</span><br><span class="line">port: 8182</span><br><span class="line">scriptEvaluationTimeout: 30000</span><br><span class="line">#channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer</span><br><span class="line">channelizer: org.apache.tinkerpop.gremlin.server.channel.WsAndHttpChannelizer</span><br><span class="line">graphs: &#123;</span><br><span class="line">  graph: conf/janusgraph-hbase-es.properties</span><br><span class="line">&#125;</span><br><span class="line">scriptEngines: &#123;</span><br><span class="line">  gremlin-groovy: &#123;</span><br><span class="line">    plugins: &#123; org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: &#123;&#125;,</span><br><span class="line">               org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: &#123;&#125;,</span><br><span class="line">               org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: &#123;classImports: [java.lang.Math], methodImports: [java.lang.Math#*]&#125;,</span><br><span class="line">               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: &#123;files: [scripts/empty-sample.groovy]&#125;&#125;&#125;&#125;</span><br><span class="line"># JanusGraph sets default serializers. You need to uncomment the following lines, if you require any custom serializers.</span><br><span class="line">#</span><br><span class="line"># serializers:</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1, config: &#123; serializeResultToString: true &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0, config: &#123; serializeResultToString: true &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   # Older serialization versions for backwards compatibility:</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoLiteMessageSerializerV1d0, config: &#123;ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: &#123; serializeResultToString: true &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV2d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerGremlinV1d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistryV1d0] &#125;&#125;</span><br><span class="line">#   - &#123; className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV1d0, config: &#123; ioRegistries: [org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistryV1d0] &#125;&#125;</span><br><span class="line">processors:</span><br><span class="line">  - &#123; className: org.apache.tinkerpop.gremlin.server.op.session.SessionOpProcessor, config: &#123; sessionTimeout: 28800000 &#125;&#125;</span><br><span class="line">  - &#123; className: org.apache.tinkerpop.gremlin.server.op.traversal.TraversalOpProcessor, config: &#123; cacheExpirationTime: 600000, cacheMaxSize: 1000 &#125;&#125;</span><br><span class="line">metrics: &#123;</span><br><span class="line">  consoleReporter: &#123;enabled: true, interval: 180000&#125;,</span><br><span class="line">  csvReporter: &#123;enabled: true, interval: 180000, fileName: /tmp/gremlin-server-metrics.csv&#125;,</span><br><span class="line">  jmxReporter: &#123;enabled: true&#125;,</span><br><span class="line">  slf4jReporter: &#123;enabled: true, interval: 180000&#125;,</span><br><span class="line">  graphiteReporter: &#123;enabled: false, interval: 180000&#125;&#125;</span><br><span class="line">maxInitialLineLength: 4096</span><br><span class="line">maxHeaderSize: 8192</span><br><span class="line">maxChunkSize: 8192</span><br><span class="line">maxContentLength: 65536</span><br><span class="line">maxAccumulationBufferComponents: 1024</span><br><span class="line">resultIterationBatchSize: 64</span><br><span class="line">writeBufferLowWaterMark: 32768</span><br><span class="line">writeBufferHighWaterMark: 65536</span><br></pre></td></tr></table></figure>
-
-<p>janusgraph-hbase-es.properties 配置</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">gremlin.graph=org.janusgraph.core.JanusGraphFactory</span><br><span class="line">storage.backend=hbase</span><br><span class="line">storage.hostname=127.0.0.1:2181</span><br><span class="line">cache.db-cache = true</span><br><span class="line">cache.db-cache-clean-wait = 20</span><br><span class="line">cache.db-cache-time = 180000</span><br><span class="line">cache.db-cache-size = 0.5</span><br><span class="line">storage.hbase.table=apache_atlas_janus</span><br><span class="line">storage.hbase.ext.hbase.security.authentication=kerberos</span><br><span class="line">storage.hbase.ext.hbase.security.authorization=true</span><br><span class="line"></span><br><span class="line">index.search.backend=elasticsearch</span><br><span class="line">index.search.hostname=127.0.0.1:9200</span><br></pre></td></tr></table></figure>
-
-<p>将 HBASE_CONF_DIR 加入 gramlin-server classpath 中（避免 kerberos 认证，连接失败等问题）</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># vim gremlin-server.sh</span><br><span class="line">CP=&quot;$GREMLIN_HOME/conf/:$HBASE_CONF_DIR&quot;</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>启动 gramlin server</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup bin/gremlin-server.sh conf/gremlin-server-atlas-wshttp.yaml &gt; gramlin-server.log 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="Gremlin-Console"><a href="#Gremlin-Console" class="headerlink" title="Gremlin Console"></a>Gremlin Console</h3><ol>
-<li>下载并解压 gremlin console ，启动</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/gremlin.sh</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>连接 gremlin server</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">:remote connect tinkerpop.server conf/remote.yaml session</span><br><span class="line">:remote console</span><br></pre></td></tr></table></figure>
-
-<h3 id="Gremlin-Console-操作"><a href="#Gremlin-Console-操作" class="headerlink" title="Gremlin Console 操作"></a>Gremlin Console 操作</h3><img src="/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/console.png" class="" title="[Gremlin Console]">
-
-<p>查询一个 hive_table 节点</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// hive_table where qualifiedName = &quot;aaa.test@test&quot;</span><br><span class="line">g = graph.traversal()</span><br><span class="line">g.V().has(&quot;__typeName&quot;, &quot;hive_table&quot;).has(&quot;Referenceable.qualifiedName&quot;, &quot;aaa.test@test&quot;).values()</span><br></pre></td></tr></table></figure>
-
-<p>查看 Graph 的一些信息</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mgmt = graph.openManagement()</span><br><span class="line"></span><br><span class="line">mgmt.printVertexLabels()	// 打印 VertexLabels 信息</span><br><span class="line">mgmt.printEdgeLabels()		// 打印 EdgeLabels 信息</span><br><span class="line">mgmt.printPropertyKeys()	// 打印 PropertyKeys 信息</span><br><span class="line">mgmt.printIndexes()			// 打印所有索引信息</span><br><span class="line"></span><br><span class="line">mgmt.printSchema()    // 打印 Schema，包括上面的所有信息</span><br><span class="line"></span><br><span class="line">index = mgmt.getGraphIndex(&quot;vertex_index&quot;);  // 获取索引对象</span><br></pre></td></tr></table></figure>
-
-<p>查询 Patch 节点信息</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">g.V().has(&quot;patch.type&quot;, &quot;TYPEDEF_PATCH&quot;)</span><br><span class="line"></span><br><span class="line">g.V().has(&quot;patch.type&quot;, &quot;JAVA_PATCH&quot;)</span><br></pre></td></tr></table></figure>
-
-<h3 id="Graphexp-安装"><a href="#Graphexp-安装" class="headerlink" title="Graphexp 安装"></a>Graphexp 安装</h3><img src="/2020/12/14/Gremlin-Server-Console-%E9%80%82%E9%85%8D-Atlas-JanusGraph/graphexp.png" class="" title="[Graphexp]">
-
-<p>Graphexp 是一个前端项目，结合 gremlin server 提供图数据的可视化。项目地址：<a target="_blank" rel="noopener" href="https://github.com/bricaud/graphexp">https://github.com/bricaud/graphexp</a></p>
-<p>拉取 github 代码，安装 Nginx 并进行如下配置。完成后访问：<a target="_blank" rel="noopener" href="http://localhost:9990/graphexp.html">http://localhost:9990/graphexp.html</a></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># vim /etc/nginx/conf.d/graphexp-9990.conf</span><br><span class="line">server &#123;</span><br><span class="line">	keepalive_requests 120; #单连接请求上限次数。</span><br><span class="line">	listen       9990;   #监听端口</span><br><span class="line">	location  ~*^.+$ &#123;       #请求的url过滤，正则匹配，~为区分大小写，~*为不区分大小写。</span><br><span class="line">	   root /data/nginx/graphexp;  #插件目录</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="其他问题"><a href="#其他问题" class="headerlink" title="其他问题"></a>其他问题</h3><ol>
-<li>Max frame length of 65536 has been exceeded.</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># io.netty.handler.codec.http.websocketx.CorruptedWebSocketFrameException: Max frame length of 65536 has been exceeded.</span><br><span class="line"># vim conf/remote.yaml</span><br><span class="line">connectionPool: &#123;maxContentLength: 655360&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2048,7 +2020,7 @@
               
                 <a href="/archives/%7C%7C%20archive">
               
-                  <span class="site-state-item-count">44</span>
+                  <span class="site-state-item-count">45</span>
                   <span class="site-state-item-name">posts</span>
                 </a>
               </div>
@@ -2061,7 +2033,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-count">28</span>
                   <span class="site-state-item-name">tags</span>
                 </a>
               </div>

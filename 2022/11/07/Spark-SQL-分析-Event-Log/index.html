@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+<meta name="google-site-verification" content="nPT3ONUGntVHfQCZH2D5GcUMgg5DH4IReN4GIs0GrW8" />
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Spark,SparkEventLog," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="一、背景Spark 程序在运行时会会在 Driver 端产生一些事件并保存在 EventLog 中，Spark History Server 通过读取并 Replay 这些 Event 可以渲染出 Spark UI 页面，Spark UI 页面中包括了我们排查问题所需的大部分指标和统计信息。 所以我们可以通过在 Spark Event Log 中提取一些关键信息，用于发现 Spark 的一些问题并">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark SQL 分析 Event Log">
+<meta property="og:url" content="https://wforget.github.io/2022/11/07/Spark-SQL-%E5%88%86%E6%9E%90-Event-Log/index.html">
+<meta property="og:site_name" content="wForget&#39;s blog">
+<meta property="og:description" content="一、背景Spark 程序在运行时会会在 Driver 端产生一些事件并保存在 EventLog 中，Spark History Server 通过读取并 Replay 这些 Event 可以渲染出 Spark UI 页面，Spark UI 页面中包括了我们排查问题所需的大部分指标和统计信息。 所以我们可以通过在 Spark Event Log 中提取一些关键信息，用于发现 Spark 的一些问题并">
+<meta property="og:locale">
+<meta property="article:published_time" content="2022-11-07T02:16:38.000Z">
+<meta property="article:modified_time" content="2022-11-07T02:17:46.516Z">
+<meta property="article:author" content="wangz">
+<meta property="article:tag" content="Spark">
+<meta property="article:tag" content="SparkEventLog">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '',
+    scheme: 'Muse',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://wforget.github.io/2022/11/07/Spark-SQL-分析-Event-Log/"/>
+
+
+
+
+
+  <title>Spark SQL 分析 Event Log | wForget's blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">wForget's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            About
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://wforget.github.io/2022/11/07/Spark-SQL-%E5%88%86%E6%9E%90-Event-Log/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wForget's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Spark SQL 分析 Event Log</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2022-11-07T10:16:38+08:00">
+                2022-11-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="一、背景"><a href="#一、背景" class="headerlink" title="一、背景"></a>一、背景</h2><p>Spark 程序在运行时会会在 Driver 端产生一些事件并保存在 EventLog 中，Spark History Server 通过读取并 Replay 这些 Event 可以渲染出 Spark UI 页面，Spark UI 页面中包括了我们排查问题所需的大部分指标和统计信息。</p>
+<p>所以我们可以通过在 Spark Event Log 中提取一些关键信息，用于发现 Spark 的一些问题并进行优化，同时也可以对历史运行的任务进行统计，为一些优化效果提供数据支撑。</p>
+<h2 id="二、Spark-SQL-读取-Event-Log"><a href="#二、Spark-SQL-读取-Event-Log" class="headerlink" title="二、Spark SQL 读取 Event Log"></a>二、Spark SQL 读取 Event Log</h2><p>Spark 中 Event log 是通过 JSON 格式进行序列化写入文件中，所以我们可以直接使用 Spark JOSN File Datasource 方式直接读取 Event Log。</p>
+<h3 id="1、直接读取Event-Log"><a href="#1、直接读取Event-Log" class="headerlink" title="1、直接读取Event Log"></a>1、直接读取Event Log</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from `json`.`hdfs://rbf-bdxs-g1/system/spark/tmp/spark/logs/application_1663317691313_4806906_1` limit 10;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、为-EventLog-文件创建一下视图"><a href="#2、为-EventLog-文件创建一下视图" class="headerlink" title="2、为 EventLog 文件创建一下视图"></a>2、为 EventLog 文件创建一下视图</h3><p>参考：<a target="_blank" rel="noopener" href="https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-table-datasource.html">https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-table-datasource.html</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CREATE OR REPLACE TEMPORARY VIEW `application_1663317691313_4806906` (</span><br><span class="line">  `Event` String, `Job ID` String,</span><br><span class="line">  `Completion Time` String,</span><br><span class="line">  `Job Result` Struct&lt;`Result` String, `Exception` Struct&lt;`Message` String, `Stack Trace` String&gt;&gt;)</span><br><span class="line">  USING `json`</span><br><span class="line">  OPTIONS (path &#x27;hdfs://rbf-bdxs-g1/system/spark/tmp/spark/logs/application_1663317691313_4806906_1&#x27;);</span><br></pre></td></tr></table></figure>
+
+<h2 id="三、Hive-SQL-读取-EventLog"><a href="#三、Hive-SQL-读取-EventLog" class="headerlink" title="三、Hive SQL 读取 EventLog"></a>三、Hive SQL 读取 EventLog</h2><p>Hive 中可以通过配置 TEXTFILE  ‘org.apache.hadoop.hive.serde2.JsonSerDe’ 序列化方式的表也可以直接读取 JSON 文件。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">CREATE EXTERNAL TABLE IF NOT EXISTS `sample`.`spark_event_log`(</span><br><span class="line">  `Event` String,</span><br><span class="line">  `Job ID` String,</span><br><span class="line">  `Completion Time` String,</span><br><span class="line">  `Job Result` Struct&lt;`Result`: String, `Exception`: Struct&lt;`Message`: String, `Stack Trace`: String&gt;&gt;</span><br><span class="line">)</span><br><span class="line">ROW FORMAT SERDE &#x27;org.apache.hadoop.hive.serde2.JsonSerDe&#x27;</span><br><span class="line">STORED AS TEXTFILE</span><br><span class="line">LOCATION &#x27;hdfs://rbf-bdxs-g1/system/spark/tmp/spark/logs/application_1663317691313_4806906_1&#x27;;</span><br><span class="line"> </span><br><span class="line">select * from `sample`.`spark_event_log` limit 10;</span><br></pre></td></tr></table></figure>
+
+<h2 id="四、分区读取-Event-Log"><a href="#四、分区读取-Event-Log" class="headerlink" title="四、分区读取 Event Log"></a>四、分区读取 Event Log</h2><p>通过上面一些尝试，我们可以确定能够通过 Spark SQL、Hive SQL 来读取 Event Log 文件。</p>
+<p>不过由于所有的 Application 都写在同一个 Event Log 路径中，我们很难过滤部分 Application 的 EventLog，所以我们需要为 Event Log 添加一些分区，使得我们可以按照分区来过滤一些数据，不用每次都全量读取。</p>
+<h3 id="1、Load-Data-方式加载到-Hive-表中"><a href="#1、Load-Data-方式加载到-Hive-表中" class="headerlink" title="1、Load Data 方式加载到 Hive 表中"></a>1、Load Data 方式加载到 Hive 表中</h3><p>在 Hive 中创建一个分区表，然后通过 Load Data 方法将 Event Log 文件加载到对应的分区中，不过测试下来发现 Load data 命令会删除源文件。</p>
+<p>我们也可以直接将文件拷贝到表的分区目录中，再为表添加对应的分区，不过这种方式相当于对源文件多个一个备份。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">CREATE EXTERNAL TABLE IF NOT EXISTS `sample`.`spark_event_log_002`(</span><br><span class="line">  `Event` String,</span><br><span class="line">  `Job ID` String,</span><br><span class="line">  `Completion Time` String,</span><br><span class="line">  `Job Result` Struct&lt;`Result`: String, `Exception`: Struct&lt;`Message`: String, `Stack Trace`: String&gt;&gt;</span><br><span class="line">)</span><br><span class="line">PARTITIONED BY (dt String, app_id String)</span><br><span class="line">ROW FORMAT SERDE &#x27;org.apache.hadoop.hive.serde2.JsonSerDe&#x27;</span><br><span class="line">STORED AS TEXTFILE;</span><br><span class="line"> </span><br><span class="line">LOAD DATA INPATH &#x27;hdfs://rbf-bdxs-g1/system/spark/tmp/spark/logs/application_1663317691313_4373493_1&#x27; INTO TABLE `sample`.`spark_event_log_002` PARTITION (dt=&#x27;2022-10-31&#x27;,app_id=&#x27;application_1663317691313_4373493&#x27;);  --- 会删除源文件</span><br><span class="line"> </span><br><span class="line">select * from `sample`.`spark_event_log_002` limit 10;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、Spark-EventLog-Connector"><a href="#2、Spark-EventLog-Connector" class="headerlink" title="2、Spark EventLog Connector"></a>2、Spark EventLog Connector</h3><p>为了让 Spark SQL 直接读取 Event Log 文件，并且对 Event Log 添加分区信息，我通过 DataSourceV2 的方式实现一个 EventLog Catalog 和 Table，复用了 JsonTable 的大部分逻辑，并重写 JsonScan 的 partitions 逻辑。</p>
+<p>实现了直接通过 Catalog 读取 Event Log 并支持 dt、hour、app_id 三级分区。</p>
+<p>代码：<a target="_blank" rel="noopener" href="https://github.com/wForget/spark-connector-eventlog">https://github.com/wForget/spark-connector-eventlog</a></p>
+<p>具体使用：<a target="_blank" rel="noopener" href="https://github.com/wForget/spark-connector-eventlog/blob/main/README.md">https://github.com/wForget/spark-connector-eventlog/blob/main/README.md</a></p>
+<p><strong>配置 EventLog Catalog</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">spark.sql.catalog.eventlog=cn.wangz.spark.connector.eventlog.EventLogCatalog</span><br><span class="line">spark.sql.catalog.eventlog.eventLogDir=hdfs://namenode01/tmp/spark/logs</span><br></pre></td></tr></table></figure>
+
+<p><strong>访问 Event Log</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">// 可通过设置 maxPartitionBytes，控制每个 task 处理的数据量</span><br><span class="line">set spark.sql.files.maxPartitionBytes=1g</span><br><span class="line"></span><br><span class="line">// 查询表</span><br><span class="line">show tables in eventlog</span><br><span class="line"></span><br><span class="line">// 查询分区</span><br><span class="line">show partitions eventlog.spark_event_log</span><br><span class="line"></span><br><span class="line">// 查询 EventLog</span><br><span class="line">select * from eventlog.spark_event_log where dt = &#x27;2022-10-26&#x27;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Spark/" rel="tag"># Spark</a>
+          
+            <a href="/tags/SparkEventLog/" rel="tag"># SparkEventLog</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2022/10/18/Kyuubi-Zorder-%E8%B0%83%E7%A0%94%E6%B5%8B%E8%AF%95/" rel="next" title="Kyuubi Zorder 调研测试">
+                <i class="fa fa-chevron-left"></i> Kyuubi Zorder 调研测试
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+   
+    <div id="gitalk-container"></div>
+	
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name"></p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">45</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">28</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/wForget" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">一、背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81Spark-SQL-%E8%AF%BB%E5%8F%96-Event-Log"><span class="nav-number">2.</span> <span class="nav-text">二、Spark SQL 读取 Event Log</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E7%9B%B4%E6%8E%A5%E8%AF%BB%E5%8F%96Event-Log"><span class="nav-number">2.1.</span> <span class="nav-text">1、直接读取Event Log</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E4%B8%BA-EventLog-%E6%96%87%E4%BB%B6%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%8B%E8%A7%86%E5%9B%BE"><span class="nav-number">2.2.</span> <span class="nav-text">2、为 EventLog 文件创建一下视图</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81Hive-SQL-%E8%AF%BB%E5%8F%96-EventLog"><span class="nav-number">3.</span> <span class="nav-text">三、Hive SQL 读取 EventLog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%88%86%E5%8C%BA%E8%AF%BB%E5%8F%96-Event-Log"><span class="nav-number">4.</span> <span class="nav-text">四、分区读取 Event Log</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81Load-Data-%E6%96%B9%E5%BC%8F%E5%8A%A0%E8%BD%BD%E5%88%B0-Hive-%E8%A1%A8%E4%B8%AD"><span class="nav-number">4.1.</span> <span class="nav-text">1、Load Data 方式加载到 Hive 表中</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81Spark-EventLog-Connector"><span class="nav-number">4.2.</span> <span class="nav-text">2、Spark EventLog Connector</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wangz</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s23.cnzz.com/z_stat.php?id=1276876819&web_id=1276876819" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="/js/src/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'b865ed71dd6039d51290',
+          clientSecret: '40e9912d3048a9f67b6470357f92ecd46dc52567',
+          repo: 'wForget.github.io',
+          owner: 'wForget',
+          admin: ['wForget'],
+		  id: md5(location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')           
+       </script>
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
